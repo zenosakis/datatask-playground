@@ -1,4 +1,4 @@
-﻿using Serilog; // Serilog 참조해야 쓸 수 있음
+﻿using Serilog; // Serilog 참조해야 쓸 수 있음 -> NuGet 패키지 Serilog 필요
 
 namespace Feature.Logger
 {
@@ -12,9 +12,9 @@ namespace Feature.Logger
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                // 콘솔 출력
+                // 콘솔 출력 ->  NuGet 패키지 Serilog.Sinks.Console 필요
                 .WriteTo.Console()
-                // 일자별 파일 저장 (날짜별 파일 생성: log-20260407.txt)
+                // 일자별 파일 저장 (날짜별 파일 생성: log-20260407.txt) -> NuGet 패키지 Serilog.Sinks.File 필요
                 .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
                 // 작업별 분리는 Serilog.Sinks.Map 사용 (nuget 설치 필요)
                 // Loki 전송은 Serilog.Sinks.Grafana.Loki 사용 (nuget 설치 필요)
