@@ -15,12 +15,10 @@ namespace Feature.Logger
                 // 콘솔 출력 ->  NuGet 패키지 Serilog.Sinks.Console 필요
                 .WriteTo.Console()
                 // 일자별 파일 저장 (날짜별 파일 생성: log-20260407.txt) -> NuGet 패키지 Serilog.Sinks.File 필요
-                .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "logs", "log-.txt"), rollingInterval: RollingInterval.Day)
                 // 작업별 분리는 Serilog.Sinks.Map 사용 (nuget 설치 필요)
                 // Loki 전송은 Serilog.Sinks.Grafana.Loki 사용 (nuget 설치 필요)
                 .CreateLogger();
-
-            Log.Information("=== 시스템 시작 ===");
         }
     }
 }
