@@ -1,27 +1,49 @@
 ﻿using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extensions.Configuration.Abstractions 필요
-using Microsoft.Extensions.Logging; // Serilog 대신 추상화 사용 -> 보통 설정 레이어가 로거 레이어보다 하위에 있어야 하기 때문
+using Feature.Encryption;
+using System.Text;
+using Microsoft.Extensions.Primitives;
+using System.Reflection.Metadata;
+using Feature.Encryption.interfaces;
 
 namespace Feature.LoadSettings
 {
-    public class LoadSettingsTest
+    public class LoadSettingsTest: IConfiguration
     {
         private readonly IConfiguration _config;
-        private readonly ILogger<LoadSettingsTest> _logger; // 나중에 시작점 프로젝트에서 Serilog 를 주입받아 동작하기 때문에 추상화만 사용
 
-        public LoadSettingsTest(IConfiguration config, ILogger<LoadSettingsTest> logger)
+        private readonly byte[] _Key = [];
+        private readonly byte[] _Iv = [];
+        private readonly IEncryptor _Encryptor;
+
+        public LoadSettingsTest(IConfiguration config)
         {
             _config = config;
-            _logger = logger;
+            if (config != null)
+            {
+                var key = config["Key"];
+                if (key != null )
+                    _Key = Encoding.UTF8.GetBytes(key);
+                var iv = config["Iv"];
+                if (iv != null)
+                    _Iv = Encoding.UTF8.GetBytes(iv);
+            }
+            _Encryptor = new AesCbcEncryptor(_Key, _Iv);
         }
 
-        public void ShowSetting()
+        public string? this[String key]
         {
-            _logger.LogInformation("설정 정보:");
-            foreach (var pair in _config.AsEnumerable())
+            get
             {
-                _logger.LogInformation("   {Key} = {Value}", pair.Key, pair.Value);
+                var value = _config[key];
+                return value is null ? null : _Encryptor.Unprotect(value);
             }
-            
+            set => _config[key] = value;
         }
+
+        // 나머지는 IConfiguration 원본에 그대로 위임
+        public IEnumerable<KeyValuePair<string, string?>> AsEnumerable() => _config.AsEnumerable();
+        public IConfigurationSection GetSection(string key) => _config.GetSection(key);
+        public IEnumerable<IConfigurationSection> GetChildren() => _config.GetChildren();
+        public IChangeToken GetReloadToken() => _config.GetReloadToken();
     }
 }

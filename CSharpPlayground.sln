@@ -5,9 +5,13 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.Logger", "Feature.Logger\Feature.Logger.csproj", "{8679AFEA-CD76-447E-9EB5-B3DF0281445B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.RunConsole", "Test.RunConsole\Test.RunConsole.csproj", "{9B376E3E-E28E-4CF0-AA6C-142A17A63950}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.RunConsole", "Test.RunConsole\Test.RunConsole.csproj", "{9B376E3E-E28E-4CF0-AA6C-142A17A63950}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.LoadSettings", "Feature.LoadSettings\Feature.LoadSettings.csproj", "{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.LoadSettings", "Feature.LoadSettings\Feature.LoadSettings.csproj", "{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.Dapper", "Feature.Dapper\Feature.Dapper.csproj", "{F28EDCEF-F475-4579-BECD-134A6CF3752F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Encryption", "Feature.Encryption\Feature.Encryption.csproj", "{1D1924E2-D49F-41DF-8408-26D7187231AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +31,14 @@ Global
 		{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F28EDCEF-F475-4579-BECD-134A6CF3752F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F28EDCEF-F475-4579-BECD-134A6CF3752F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F28EDCEF-F475-4579-BECD-134A6CF3752F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F28EDCEF-F475-4579-BECD-134A6CF3752F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D1924E2-D49F-41DF-8408-26D7187231AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D1924E2-D49F-41DF-8408-26D7187231AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D1924E2-D49F-41DF-8408-26D7187231AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D1924E2-D49F-41DF-8408-26D7187231AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
