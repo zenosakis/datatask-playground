@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Feature.Dapper\Feature.Dapper.csproj" />
     <ProjectReference Include="..\Feature.LoadSettings\Feature.LoadSettings.csproj" />
     <ProjectReference Include="..\Feature.Logger\Feature.Logger.csproj" />
   </ItemGroup>

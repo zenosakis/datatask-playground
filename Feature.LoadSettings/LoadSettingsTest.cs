@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extensions.Configuration.Abstractions 필요
-using Feature.Encryption;
-using System.Text;
 using Microsoft.Extensions.Primitives;
-using System.Reflection.Metadata;
 using Feature.Encryption.interfaces;
 
 namespace Feature.LoadSettings
@@ -10,24 +7,12 @@ namespace Feature.LoadSettings
     public class LoadSettingsTest: IConfiguration
     {
         private readonly IConfiguration _config;
+        private readonly IEncryptor _encryptor;
 
-        private readonly byte[] _Key = [];
-        private readonly byte[] _Iv = [];
-        private readonly IEncryptor _Encryptor;
-
-        public LoadSettingsTest(IConfiguration config)
+        public LoadSettingsTest(IConfiguration config, IEncryptor encryptor)
         {
             _config = config;
-            if (config != null)
-            {
-                var key = config["Key"];
-                if (key != null )
-                    _Key = Encoding.UTF8.GetBytes(key);
-                var iv = config["Iv"];
-                if (iv != null)
-                    _Iv = Encoding.UTF8.GetBytes(iv);
-            }
-            _Encryptor = new AesCbcEncryptor(_Key, _Iv);
+            _encryptor = encryptor;
         }
 
         public string? this[String key]
@@ -35,7 +20,7 @@ namespace Feature.LoadSettings
             get
             {
                 var value = _config[key];
-                return value is null ? null : _Encryptor.Unprotect(value);
+                return value is null ? null : _encryptor.Unprotect(value);
             }
             set => _config[key] = value;
         }

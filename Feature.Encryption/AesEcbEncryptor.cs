@@ -6,22 +6,20 @@ namespace Feature.Encryption
 {
     public class AesEcbEncryptor : IEncryptor
     {
-        private readonly byte[] _Key;
-        private readonly byte[] _IV;
+        private readonly EncryptionOptions _options;
         private readonly PaddingMode _paddingMode;
 
-        public AesEcbEncryptor(byte[] key, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public AesEcbEncryptor(EncryptionOptions options, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
-            _Key = key;
-            _IV = iv;
+            _options = options;
             _paddingMode = paddingMode;
         }
 
         public string Encrypt(string plainText)
         {
             using var aes = Aes.Create();
-            aes.Key = _Key;
-            aes.IV = _IV;
+            aes.Key = _options.Key;
+            aes.IV = _options.Iv;
 
             var encrypted = aes.EncryptEcb(Encoding.UTF8.GetBytes(plainText), _paddingMode);
 
@@ -31,8 +29,8 @@ namespace Feature.Encryption
         public string Decrypt(string encryptedValue)
         {
             using var aes = Aes.Create();
-            aes.Key = _Key;
-            aes.IV = _IV;
+            aes.Key = _options.Key;
+            aes.IV = _options.Iv;
 
             var cipher = Convert.FromBase64String(encryptedValue);
 

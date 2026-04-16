@@ -6,24 +6,22 @@ namespace Feature.Encryption
 {
     public class AesCbcEncryptor: IEncryptor
     {
-        private readonly byte[] _Key;
-        private readonly byte[] _IV;
+        private readonly EncryptionOptions _options;
         private readonly PaddingMode _paddingMode;
 
-        public AesCbcEncryptor(byte[] key, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public AesCbcEncryptor(EncryptionOptions options, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
-            _Key = key;
-            _IV = iv;
+            _options = options;
             _paddingMode = paddingMode;
         }
 
         public string Encrypt(string plainText)
         {
             using var aes = Aes.Create();
-            aes.Key = _Key;
-            aes.IV = _IV;
+            aes.Key = _options.Key;
+            aes.IV = _options.Iv;
 
-            var encrypted = aes.EncryptCbc(Encoding.UTF8.GetBytes(plainText), _IV, _paddingMode);
+            var encrypted = aes.EncryptCbc(Encoding.UTF8.GetBytes(plainText), _options.Iv, _paddingMode);
 
             return Convert.ToBase64String(encrypted);
         }
@@ -31,12 +29,12 @@ namespace Feature.Encryption
         public string Decrypt(string encryptedValue)
         {
             using var aes = Aes.Create();
-            aes.Key = _Key;
-            aes.IV = _IV;
+            aes.Key = _options.Key;
+            aes.IV = _options.Iv;
 
             var cipher = Convert.FromBase64String(encryptedValue);
 
-            return Encoding.UTF8.GetString(aes.DecryptCbc(cipher, _IV, _paddingMode));
+            return Encoding.UTF8.GetString(aes.DecryptCbc(cipher, _options.Iv, _paddingMode));
         }
     }
 }
