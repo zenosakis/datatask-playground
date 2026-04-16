@@ -1,0 +1,81 @@
+root = true
+
+# ── 모든 파일 공통 ─────────────────────────────────────────────
+[*]
+charset                  = utf-8
+end_of_line              = crlf
+insert_final_newline     = true
+trim_trailing_whitespace = true
+indent_style             = space
+indent_size              = 4
+
+# ── C# 파일 ────────────────────────────────────────────────────
+[*.cs]
+
+# ── [1] Public Property: PascalCase, 언더바 없음 ──────────────
+dotnet_naming_rule.public_property_pascal.severity        = warning
+dotnet_naming_rule.public_property_pascal.symbols         = public_property_symbols
+dotnet_naming_rule.public_property_pascal.style           = pascal_case_style
+
+dotnet_naming_symbols.public_property_symbols.applicable_kinds           = property
+dotnet_naming_symbols.public_property_symbols.applicable_accessibilities = public
+
+dotnet_naming_style.pascal_case_style.capitalization      = pascal_case
+dotnet_naming_style.pascal_case_style.required_prefix     =
+dotnet_naming_style.pascal_case_style.required_suffix     =
+dotnet_naming_style.pascal_case_style.word_separator      =
+
+# ── [2] Private Field: _camelCase ─────────────────────────────
+dotnet_naming_rule.private_field_underscore_camel.severity = warning
+dotnet_naming_rule.private_field_underscore_camel.symbols  = private_field_symbols
+dotnet_naming_rule.private_field_underscore_camel.style    = underscore_camel_style
+
+dotnet_naming_symbols.private_field_symbols.applicable_kinds           = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+
+dotnet_naming_style.underscore_camel_style.capitalization  = camel_case
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+dotnet_naming_style.underscore_camel_style.required_suffix =
+dotnet_naming_style.underscore_camel_style.word_separator  =
+
+# ── [3] Constant: PascalCase ─────────────────────────────────
+dotnet_naming_rule.constant_pascal.severity = warning
+dotnet_naming_rule.constant_pascal.symbols  = constant_symbols
+dotnet_naming_rule.constant_pascal.style    = pascal_case_style
+
+dotnet_naming_symbols.constant_symbols.applicable_kinds           = field
+dotnet_naming_symbols.constant_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.constant_symbols.required_modifiers         = const
+
+# ── [4] Method: PascalCase ────────────────────────────────────
+dotnet_naming_rule.method_pascal.severity = warning
+dotnet_naming_rule.method_pascal.symbols  = method_symbols
+dotnet_naming_rule.method_pascal.style    = pascal_case_style
+
+dotnet_naming_symbols.method_symbols.applicable_kinds           = method
+dotnet_naming_symbols.method_symbols.applicable_accessibilities = *
+
+# ── [5] Local Variable: camelCase, 언더바 없음 ────────────────
+dotnet_naming_rule.local_var_camel.severity = warning
+dotnet_naming_rule.local_var_camel.symbols  = local_var_symbols
+dotnet_naming_rule.local_var_camel.style    = camel_case_style
+
+dotnet_naming_symbols.local_var_symbols.applicable_kinds           = local
+dotnet_naming_symbols.local_var_symbols.applicable_accessibilities = *
+
+dotnet_naming_style.camel_case_style.capitalization  = camel_case
+dotnet_naming_style.camel_case_style.required_prefix =
+dotnet_naming_style.camel_case_style.required_suffix =
+dotnet_naming_style.camel_case_style.word_separator  =
+
+# ── 코드 스타일 (선택적 보조 규칙) ────────────────────────────
+dotnet_style_qualification_for_field    = false : suggestion
+dotnet_style_qualification_for_property = false : suggestion
+dotnet_style_qualification_for_method   = false : suggestion
+
+csharp_style_var_for_built_in_types     = true : suggestion
+csharp_style_var_when_type_is_apparent  = true : suggestion
+csharp_style_var_elsewhere              = true : suggestion
+
+csharp_new_line_before_open_brace       = all
+csharp_space_after_cast                 = false
