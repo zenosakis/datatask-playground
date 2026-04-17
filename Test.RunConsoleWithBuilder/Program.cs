@@ -8,9 +8,12 @@ using Feature.Dapper;
 using Feature.Encryption;
 using Feature.Encryption.interfaces;
 using Microsoft.Data.SqlClient;
+// 빌더용 (의존성 주입)
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 //////////////////////////////////////////
-/// 의존성 주입 방식: Pure DI (직접 new 로 생성한 다음, 사용하는 클래스에 직접 넣어주는 방식)
+/// 의존성 주입 방식: 빌더 사용
 
 // 설정 정보 빌드 -> 설정 정보를 주입하기 위함
 var configuration = new ConfigurationBuilder()
@@ -19,18 +22,21 @@ var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true) // 암호화 키 관련 등 민감 설정파일(git 커밋X) = 옵션
     .Build();
 
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.Configure<EncryptionOptions>(
+    configuration.GetSection("Encryption")
+);
+builder.Services.AddSingleton<IEncryptor, AesCbcEncryptor>();
+builder.Services.AddSingleton<LoadSettingsTest>();
+
+var host = builder.Build();
+
 // 로그
 SerilogTest.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
 Log.Information("=== 콘솔 프로그램 시작 ===");
 Log.Debug(AppContext.BaseDirectory); // appsettings.json 위치해야 할 경로
 
-// 암호화 관련 모듈
-EncryptionOptions encryptionOptions = new EncryptionOptions(configuration["Key"], configuration["Iv"]);
-IEncryptor encryptor = new AesCbcEncryptor(encryptionOptions);
-
-// 설정 로드
-LoadSettingsTest config = new LoadSettingsTest(configuration, encryptor);
-
+var config = host.Services.GetRequiredService<LoadSettingsTest>();
 // 설정 로그 테스트
 Log.Information("설정 정보:");
 if (config != null)
@@ -40,7 +46,7 @@ if (config != null)
         Log.Information("   {Key} = {Value}", pair.Key, pair.Value);
     }
 }
-Log.Debug("테스트: {value}", config["TestKey"]);
+Log.Debug("테스트: {value}", config["MyValue:TestKey"]);
 Log.Debug("테스트: {value}", config["DB:Ip"]);
 
 

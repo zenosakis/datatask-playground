@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extensions.Configuration.Abstractions 필요
+using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extensions.Configuration.Abstractions 필요
 using Microsoft.Extensions.Primitives;
 using Feature.Encryption.interfaces;
 
 namespace Feature.LoadSettings
 {
-    public class LoadSettingsTest: IConfiguration
+    public class LoadSettingsTest
     {
         private readonly IConfiguration _config;
         private readonly IEncryptor _encryptor;

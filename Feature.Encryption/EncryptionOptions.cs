@@ -1,16 +1,21 @@
-﻿using System.Text;
+using System.Text;
 
 namespace Feature.Encryption
 {
     public class EncryptionOptions
     {
-        public byte[] Key { get; set; }
-        public byte[] Iv { get; set; }
+        public string? Key { get; set; }
+        public string? Iv { get; set; }
 
-        public EncryptionOptions(string key, string iv) 
-        { 
-            Key = Encoding.UTF8.GetBytes(key);
-            Iv = Encoding.UTF8.GetBytes(iv);
+        public byte[] KeyBytes => Encoding.UTF8.GetBytes(Key ?? throw new InvalidOperationException("Encryption Key is not configured."));
+        public byte[] IvBytes => Encoding.UTF8.GetBytes(Iv ?? throw new InvalidOperationException("Encryption IV is not configured."));
+
+        public EncryptionOptions() { }
+
+        public EncryptionOptions(string key, string iv)
+        {
+            Key = key;
+            Iv = iv;
         }
     }
 }
