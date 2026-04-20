@@ -8,7 +8,7 @@ namespace Test.Encryption
         const string Iv = "1234567890123456";
 
         [Fact]
-        public void EncryptionAesCbc_Encrypt_Test()
+        public void Encryptor_Encrypt_ReturrnsEncrypted()
         {
             var encryptionOptions = new EncryptionOptions(Key, Iv);
             var aesCbc = new AesCbcEncryptor(encryptionOptions);
@@ -17,7 +17,7 @@ namespace Test.Encryption
         }
 
         [Fact]
-        public void EncryptionAesCbc_Decrypt_Test()
+        public void Encryptor_Decrypt_ReturnsDecrypted()
         {
             var encryptionOptions = new EncryptionOptions(Key, Iv);
             var aesCbc = new AesCbcEncryptor(encryptionOptions);
@@ -25,7 +25,7 @@ namespace Test.Encryption
         }
 
         [Fact]
-        public void EncryptionAescbc_RoundTrip_Test()
+        public void Encryptor_RoundTrip_ReturnOriginal()
         {
             var encryptionOptions = new EncryptionOptions(Key, Iv);
             var aesCbc = new AesCbcEncryptor(encryptionOptions);

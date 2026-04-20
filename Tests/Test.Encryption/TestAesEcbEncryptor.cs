@@ -7,7 +7,7 @@ namespace Test.Encryption
         const string Key = "12345678901234567890123456789012";
 
         [Fact]
-        public void EncryptionAesEcb_Encrypt_Test()
+        public void Encryptor_Encrypt_ReturrnsEncrypted()
         {
             var encryptionOptions = new EncryptionOptions(Key);
             var aesECb = new AesEcbEncryptor(encryptionOptions);
@@ -16,7 +16,7 @@ namespace Test.Encryption
         }
 
         [Fact]
-        public void EncryptionAesEcb_Decrypt_Test()
+        public void Encryptor_Decrypt_ReturnsDecrypted()
         {
             var encryptionOptions = new EncryptionOptions(Key);
             var aesECb = new AesEcbEncryptor(encryptionOptions);
@@ -24,7 +24,7 @@ namespace Test.Encryption
         }
 
         [Fact]
-        public void EncryptionAesEcb_RoundTrip_Test()
+        public void Encryptor_RoundTrip_ReturnOriginal()
         {
             var encryptionOptions = new EncryptionOptions(Key);
             var aesECb = new AesEcbEncryptor(encryptionOptions);

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using System.Data;
 using Microsoft.Data.SqlClient; // SqlConnection 사용 위함(원래 System.Data.SqlClient 였으나 2019년 변경됨 => Nuget 패키지 "Microsoft.Data.SqlClient" 필요
 

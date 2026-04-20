@@ -23,6 +23,11 @@
 
 > `.editorconfig` 파일에 Roslyn 분석기 규칙으로 등록되어 있음.
 
+### 예외 — 테스트 메서드 (`Tests/**/*.cs`)
+- xUnit 관례상 `대상_시나리오_기대결과` 형태의 **언더바 허용**.
+- 예: `Indexer_Get_WhenKeyMissing_ReturnsNull`, `Encrypt_WithEmptyString_ThrowsArgumentException`.
+- `.editorconfig`에서 `Tests/**/*.cs` 경로에 한해 `method_pascal` 규칙을 `severity = none`으로 비활성화함.
+
 ## Key Commands
 - `/plan`: 계획 없이 구현 시작 방지 — 구현 계획을 먼저 작성.
 - `/di-check`: DI 등록 현황 조회 및 라이프타임(Scoped, Singleton 등) 문제 탐지.

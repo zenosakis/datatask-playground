@@ -79,3 +79,7 @@ csharp_style_var_elsewhere              = true : suggestion
 
 csharp_new_line_before_open_brace       = all
 csharp_space_after_cast                 = false
+
+# ── 테스트 프로젝트: 메서드 언더바 허용 (xUnit 관례) ─────────────
+[Tests/**/*.cs]
+dotnet_naming_rule.method_pascal.severity = none

@@ -9,14 +9,14 @@ namespace Test.Encryption
         const string Iv = "1234567890123456";
 
         [Fact]
-        public void EncryptionOptions_Key_Test()
+        public void EncryptionOptions_GeyKeyBytes_ReturnsKeyBytes()
         {
             var encryptionOptions = new EncryptionOptions(Key, Iv);
             Assert.Equal(Encoding.UTF8.GetBytes(Key), encryptionOptions.KeyBytes);
         }
 
         [Fact]
-        public void EncryptionOptions_Iv_Test()
+        public void EncryptionOptions_GetIvBytes_ReturnsIvBytes()
         {
             var encryptionOptions = new EncryptionOptions(Key, Iv);
             Assert.Equal(Encoding.UTF8.GetBytes(Iv), encryptionOptions.IvBytes);
