@@ -6,13 +6,14 @@ using Serilog;
 using Feature.LoadSettings;
 using Feature.Dapper;
 using Feature.Encryption;
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 using Microsoft.Data.SqlClient;
 // 빌더용 (의존성 주입)
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Data;
 using Microsoft.Extensions.Options;
+using Feature.Transfer;
 
 //////////////////////////////////////////
 /// 의존성 주입 방식: 빌더 사용
@@ -53,8 +54,15 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 // 실제 사용할 Dapper 클래스 주입 -> 여기선 IDbConnection 을 요구(DI 주입) -> 여기선 IOptions<DbOptions> 를 요구 -> IOptions<DbOptions> 는 이미 Configure 로 등록되어있음 (PostConfigure 를 통해 복호화까지 되어있음)
 builder.Services.AddScoped<DapperTest>();
 
+// HTTP
+builder.Services.Configure<HttpTransferOptions>(
+    builder.Configuration.GetSection("HTTPTransfer")
+);
+builder.Services.AddScoped<HttpClient>();
+builder.Services.AddScoped<HttpTransferClient>();
+
 // 여기서부터 실제 동작할 코드들. builder.Build() 이후에는 등록이 안 됨. 위에 정의된 레시피에 따라 동작함
-var host = builder.Build();
+using var host = builder.Build();
 
 // 로그
 SerilogTest.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
@@ -80,6 +88,10 @@ foreach (var row in rows)
 {
     Log.Information("   DIALEDKEY: {Key}", row.DIALEDKEY);
 }
+
+// HTTP 테스트
+var http = host.Services.GetRequiredService<HttpTransferClient>();
+await http.GetStreamAsync("/");
 
 
 Log.Information("=== 콘솔 프로그램 종료 ===");

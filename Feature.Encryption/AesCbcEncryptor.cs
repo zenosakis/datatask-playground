@@ -1,4 +1,4 @@
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;

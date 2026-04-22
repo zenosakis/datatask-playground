@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Options;
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 
 namespace Feature.Dapper
 {

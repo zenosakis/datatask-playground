@@ -1,4 +1,4 @@
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 using Feature.LoadSettings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 using Microsoft.Extensions.Options;
 
 namespace Feature.Encryption

@@ -6,7 +6,7 @@ using Serilog;
 using Feature.LoadSettings;
 using Feature.Dapper;
 using Feature.Encryption;
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 using Microsoft.Data.SqlClient;
 
 //////////////////////////////////////////
@@ -25,11 +25,11 @@ Log.Information("=== 콘솔 프로그램 시작 ===");
 Log.Debug(AppContext.BaseDirectory); // appsettings.json 위치해야 할 경로
 
 // 암호화 관련 모듈
-EncryptionOptions encryptionOptions = new EncryptionOptions(configuration["Key"], configuration["Iv"]);
+var encryptionOptions = new EncryptionOptions(configuration["Key"], configuration["Iv"]);
 IEncryptor encryptor = new AesCbcEncryptor(encryptionOptions);
 
 // 설정 로드
-LoadSettingsTest config = new LoadSettingsTest(configuration, encryptor);
+var config = new LoadSettingsTest(configuration, encryptor);
 
 // 설정 로그 테스트
 Log.Information("설정 정보:");
@@ -45,7 +45,7 @@ Log.Debug("테스트: {value}", config["DB:Ip"]);
 
 
 // DB
-var connection = new SqlConnection($"Server={config["DB:Ip"]},{config["DB:Port"]};Database={config["DB:Database"]};User Id={config["DB:User"]};Password={config["DB:Password"]};TrustServerCertificate=True;");
+using var connection = new SqlConnection($"Server={config["DB:Ip"]},{config["DB:Port"]};Database={config["DB:Database"]};User Id={config["DB:User"]};Password={config["DB:Password"]};TrustServerCertificate=True;");
 var dapper = new DapperTest(connection);
 
 // DB 테스트

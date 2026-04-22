@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extensions.Configuration.Abstractions 필요
 using Microsoft.Extensions.Primitives;
-using Feature.Encryption.interfaces;
+using Feature.Encryption.Interfaces;
 
 namespace Feature.LoadSettings
 {

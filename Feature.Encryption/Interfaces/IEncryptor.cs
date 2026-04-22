@@ -1,4 +1,4 @@
-namespace Feature.Encryption.interfaces
+namespace Feature.Encryption.Interfaces
 {
     /// <summary>
     /// <para>암호화 인터페이스. 인터페이스를 상속받은 클래스로 알고리즘 결정 (AES, RSA 등)</para>

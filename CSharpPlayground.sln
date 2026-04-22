@@ -25,6 +25,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Encryption", "Tests\Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.LoadSettings", "Tests\Test.LoadSettings\Test.LoadSettings.csproj", "{568790BD-8186-4332-8ED2-4E82ABF04BDF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Transfer", "Feature.Transfer\Feature.Transfer.csproj", "{F56B4246-4028-461A-A54D-54D25BCC981B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Transfer", "Tests\Test.Transfer\Test.Transfer.csproj", "{077BD5ED-325D-4BCA-A71F-933682D3A427}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +75,14 @@ Global
 		{568790BD-8186-4332-8ED2-4E82ABF04BDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{568790BD-8186-4332-8ED2-4E82ABF04BDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{568790BD-8186-4332-8ED2-4E82ABF04BDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F56B4246-4028-461A-A54D-54D25BCC981B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F56B4246-4028-461A-A54D-54D25BCC981B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F56B4246-4028-461A-A54D-54D25BCC981B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F56B4246-4028-461A-A54D-54D25BCC981B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
