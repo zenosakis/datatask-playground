@@ -8,9 +8,9 @@ namespace Test.Transfer
         public void HttpTransferOptions_GetBaseAddress_ReturnsBaseAddress()
         {
             var options = new HttpTransferOptions();
-            options.BaseAddress = "19.19.20.53:21005";
+            options.BaseAddress = "localhost:21005";
 
-            Assert.Equal("19.19.20.53:21005", options.BaseAddress);
+            Assert.Equal("localhost:21005", options.BaseAddress);
         }
 
         [Fact]

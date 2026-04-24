@@ -105,7 +105,7 @@ namespace Test.Transfer
         private readonly Mock<HttpMessageHandler> _handlerMock = new(MockBehavior.Strict);
 
         [Fact]
-        public async Task HttpTransferClient_GetStreamAsync_ReturnsStream()
+        public async Task GetStreamAsync_WhenResponseOk_ReturnsStreamContent()
         {
             // [Q9] disposeHandler: false — HttpClient 가 handler 를 Dispose 하지 않게 함.
             //      Strict 모드에서 Dispose(bool) 호출이 Setup 없이 들어와 폭발하는 것을 방지.
@@ -116,7 +116,7 @@ namespace Test.Transfer
             //      BaseAddress 에 http:// 스킴 필수 (없으면 new Uri 가 UriFormatException).
             var options = new HttpTransferOptions()
             {
-                BaseAddress = "http://19.19.20.53:21005",
+                BaseAddress = "http://localhost",
                 TimeoutSeconds = 60,
             };
             var sut = new HttpTransferClient(client, options);
@@ -137,12 +137,12 @@ namespace Test.Transfer
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 ).ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StreamContent(stream)
-                    }
+                {
+                    Content = new StreamContent(stream)
+                }
                 );
 
-            using var result = await sut.GetStreamAsync("/");
+            await using var result = await sut.GetStreamAsync("/");
             using var streamReader = new StreamReader(result);
             var text = await streamReader.ReadToEndAsync();
 
@@ -163,5 +163,38 @@ namespace Test.Transfer
                 );
         }
 
+        [Fact]
+        public async Task GetStreamAsync_WithRelativePath_SendsGetToBaseAddressPlusPath()
+        {
+            using var client = new HttpClient(_handlerMock.Object, false);
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = "http://localhost",
+                TimeoutSeconds = 30
+            };
+            var sut = new HttpTransferClient(client, options);
+
+            _handlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>
+                (
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                ).ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent([])
+                });
+
+            await using var _ = await sut.GetStreamAsync("/some");
+
+            _handlerMock.Protected()
+                .Verify<Task<HttpResponseMessage>>
+                (
+                    "SendAsync", Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(r =>
+                        r.Method == HttpMethod.Get && r.RequestUri!.AbsolutePath == "/some"),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
     }
 }
