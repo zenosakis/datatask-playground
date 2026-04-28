@@ -153,6 +153,52 @@
 //          명시적 discard 가 필요하면 `_ = await sut.GetStringAsync("/...")`.
 //   - 원칙: using/await using 은 "해제할 자원이 있을 때" 만. string/int/Task 결과
 //          같은 자원 없는 값에는 붙이지 않음.
+//
+// [Q16] 보일러플레이트를 ctor 로 추출할 때 [Q9] 의 함정이 어떻게 부활하나?
+//      그리고 xUnit 라이프사이클(ctor/Dispose) 은 NUnit [SetUp]/[TearDown] 을 어떻게 대체하나?
+//   - 배경: 6 개 테스트가 같은 SUT 셋업을 반복하던 시점에서, 매 테스트마다 만들던
+//           `using var client = new HttpClient(_handlerMock.Object, false)` 를
+//           테스트 클래스 ctor 의 `_client` 필드 초기화로 옮기는 추출 리팩토링.
+//
+//   - 함정 ①: 옮기는 과정에서 두 번째 인자 `disposeHandler: false` 를 빠뜨리기 쉬움.
+//             이 시점에는 `using` 도 함께 사라지므로 client.Dispose() 가 호출되지
+//             않음 → handler.Dispose(true) 도 호출 안 됨 → 테스트 통과.
+//             → "지금은 잘 돌아가니까 OK" 라고 착각하기 쉬움.
+//   - 함정 ②: 미래에 HttpClient 누수 정리하려고 테스트 클래스를 IDisposable 로
+//             만들면 즉시 [Q9] 의 MockException 부활. 잠복하던 함정이 한 번에 폭발.
+//             → 시한폭탄을 코드에 심는 효과.
+//
+//   - 해결: 두 가지를 **동시에** 적용해야 완전 봉인.
+//           ① ctor 에서 `disposeHandler: false` 명시 — handler 와의 수명 분리.
+//           ② 테스트 클래스 `: IDisposable` + `Dispose() => _client.Dispose();`
+//              — xUnit 이 매 테스트 후 자동 호출 → 누수 방지.
+//
+//   - 한 단계 더 — xUnit 라이프사이클의 정석 (NUnit 과 비교):
+//
+//       NUnit                          xUnit
+//       ─────────────                  ──────────────────────────
+//       [SetUp] 메서드            →    테스트 클래스 ctor (매 테스트마다 호출)
+//       [TearDown] 메서드         →    IDisposable.Dispose() (매 테스트 후 호출)
+//       클래스 인스턴스 1개을     →    매 테스트마다 새 인스턴스 (강한 격리)
+//       모든 테스트가 공유
+//
+//     xUnit 은 별도 어트리뷰트 없이 **C# 표준 라이프사이클 메커니즘(ctor/Dispose)
+//     을 그대로 활용**. 따라서 readonly 필드 초기화도 매 테스트마다 새로 실행되어
+//     안전 — 예: `private readonly Mock<...> _handlerMock = new(Strict);`
+//
+//     이 모델 덕분에 테스트 간 상태 누수가 구조적으로 막힘 — NUnit 에서 흔한
+//     "이전 테스트가 남긴 mock 셋업 때문에 다음 테스트가 오염" 이슈가 원천 차단.
+//
+//   - 추가 옵션 (참고용 — 지금 단계에선 안 씀):
+//       [Fact]/[Theory] 마다 인스턴스    ← 기본 동작. 강한 격리.
+//       IClassFixture<T>                 ← 한 클래스 내 모든 테스트가 T 공유
+//                                           (DB 컨테이너 같은 무거운 리소스용).
+//       ICollectionFixture<T>            ← 여러 테스트 클래스가 T 공유.
+//
+//   - 원칙: 추출(extract) 리팩토링은 **행동 변화 없는 변환** 이어야 함. 한 줄을
+//          옮길 때도 모든 인자/생성자 옵션을 보존했는지 점검. 빠뜨린 한 인자가
+//          미래의 함정이 됨. 학습 일지에 적어둔 [Q9] 같은 기존 함정들이
+//          리팩토링 시 다시 떠오르도록 자기 점검 체크리스트로 활용.
 // ============================================================================
 
 using Feature.Transfer;
@@ -163,28 +209,36 @@ using System.Text;
 
 namespace Test.Transfer
 {
-    public class TestHttpTransferClient
+    public class TestHttpTransferClient : IDisposable
     {
         // [Q9] Strict 모드 — Setup 하지 않은 호출은 즉시 예외.
         //      오타/매칭 실수를 조용히 넘기지 않아 학습 단계에 유리.
         private readonly Mock<HttpMessageHandler> _handlerMock = new(MockBehavior.Strict);
+        private readonly HttpClient _client;
+
+        public TestHttpTransferClient()
+        {
+            _client = new HttpClient(_handlerMock.Object, disposeHandler: false);
+        }
+
+        private HttpTransferClient CreateSut(
+            string baseAddress = "http://localhost",
+            int timeoutSeconds = 60)
+        {
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = baseAddress,
+                TimeoutSeconds = timeoutSeconds,
+            };
+            return new HttpTransferClient(_client, options);
+        }
+
+        public void Dispose() => _client.Dispose();
 
         [Fact]
         public async Task GetStreamAsync_WhenResponseOk_ReturnsStreamContent()
         {
-            // [Q9] disposeHandler: false — HttpClient 가 handler 를 Dispose 하지 않게 함.
-            //      Strict 모드에서 Dispose(bool) 호출이 Setup 없이 들어와 폭발하는 것을 방지.
-            //      Mock handler 의 수명은 테스트 프레임워크가 관리.
-            using var client = new HttpClient(_handlerMock.Object, false);
-
-            // [Q3] Options 는 POCO — Mock 하지 않고 실제 인스턴스로 주입.
-            //      BaseAddress 에 http:// 스킴 필수 (없으면 new Uri 가 UriFormatException).
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 60,
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             // MemoryStream(byte[]) 생성자는 Position=0 에서 시작.
             // Write() + Position=0 리셋을 하지 않아도 돼서 안전.
@@ -230,13 +284,7 @@ namespace Test.Transfer
         [Fact]
         public async Task GetStreamAsync_WithRelativePath_SendsGetToBaseAddressPlusPath()
         {
-            using var client = new HttpClient(_handlerMock.Object, false);
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 30
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             _handlerMock
                 .Protected()
@@ -268,13 +316,7 @@ namespace Test.Transfer
         [InlineData(HttpStatusCode.Unauthorized)]
         public async Task GetStreamAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException(HttpStatusCode statusCode)
         {
-            using var client = new HttpClient(_handlerMock.Object, false);
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 30
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             _handlerMock
                 .Protected()
@@ -291,13 +333,7 @@ namespace Test.Transfer
         [Fact]
         public async Task GetStringAsync_WhenResponseOk_ReturnsStringContent()
         {
-            using var client = new HttpClient(_handlerMock.Object, false);
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 60,
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             _handlerMock
                 .Protected()
@@ -324,13 +360,7 @@ namespace Test.Transfer
         [Fact]
         public async Task GetStringAsync_WithRelativePath_SendsGetToBaseAddressPlusPath()
         {
-            using var client = new HttpClient(_handlerMock.Object, false);
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 60,
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             _handlerMock
                 .Protected()
@@ -359,13 +389,7 @@ namespace Test.Transfer
         [InlineData(HttpStatusCode.Unauthorized)]
         public async Task GetStringAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException(HttpStatusCode statusCode)
         {
-            using var client = new HttpClient(_handlerMock.Object, false);
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = "http://localhost",
-                TimeoutSeconds = 60,
-            };
-            var sut = new HttpTransferClient(client, options);
+            var sut = CreateSut("http://localhost", 60);
 
             _handlerMock
                 .Protected()
