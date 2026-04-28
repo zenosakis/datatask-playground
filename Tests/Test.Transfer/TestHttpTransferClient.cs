@@ -88,6 +88,71 @@
 //   - 원칙: 우변에서 타입이 명백하면 var (DRY + 가독성 + 리팩터 저항성).
 //           내부 메서드의 반환 타입이 이름만으로 불명확하면 타입 명시.
 //           StreamReader.ReadToEnd() 같은 BCL 관용구는 var 가 일반적.
+//
+// [Q12] 같은 명제를 여러 입력으로 검증하려면? ([Fact] vs [Theory])
+//   - 원인: [Fact] 는 "이 시나리오에서 이렇게 된다" 한 점만 찍음.
+//           "비-2xx 응답이면 모두 throw" 같은 일반화된 명제를 한 케이스(404)
+//           로만 검증하면 이름(WhenResponseIsNotSuccess)이 본문보다 넓은 약속을
+//           하게 됨 — 이름이 거짓말을 함.
+//   - 해결: [Theory] + [InlineData(...)] 조합.
+//           xUnit 이 [InlineData] 개수만큼 테스트 인스턴스를 복제 → 각 인자를
+//           메서드 매개변수에 1:1 매핑 → 독립 테스트로 실행.
+//           한 케이스만 깨져도 어느 입력에서 깨졌는지 러너 출력에서 즉시 식별
+//           가능 (별개 줄로 표시).
+//           Setup 과 Assert 양쪽에서 매개변수를 사용해야 일반성이 진짜로 검증됨.
+//   - 함정 ①: [InlineData] 는 **컴파일 상수만** 가능.
+//             가능: enum / 숫자 / string / bool / typeof(X) / null / 1차원 배열
+//             불가: new HttpResponseMessage(...), Guid.NewGuid(), 람다, 익명 객체
+//             동적/객체 케이스가 필요하면 [MemberData] (정적 멤버) 또는
+//             [ClassData] (별도 클래스) 로 우회.
+//   - 함정 ②: [InlineData] 인자 개수 ≠ 메서드 시그니처 불일치는
+//             **컴파일이 아닌 런타임 실패** 로 잡힘.
+//   - 적용 기준: 본문에 if (input == X) Assert.A else Assert.B 같은 분기가
+//                생기면 [Theory] 자격 미달 — 명제가 다른 두 동작이므로
+//                [Fact] 두 개로 분리. [Theory] 는 "동일한 행동 명제를 입력만
+//                바꿔 검증" 할 때만.
+//
+// [Q13] HttpResponseMessage 의 본문은 StringContent 프로퍼티가 아니라 Content.
+//   - 원인: HttpResponseMessage 의 본문 슬롯은 프로퍼티 하나 — Content (타입은
+//           추상 클래스 HttpContent).
+//           StringContent / StreamContent / ByteArrayContent 는 프로퍼티가 아니라
+//           HttpContent 의 자손 *타입*(클래스 이름). 슬롯에 꽂을 구체 값일 뿐.
+//   - 해결: new HttpResponseMessage() { Content = new StringContent("...") }
+//           프로퍼티 = 슬롯(Content), 우변 = 어떤 HttpContent 자손을 꽂을지 결정.
+//           OOP 다형성 패턴 — 슬롯은 추상, 값은 구체 자손.
+//   - 컴파일 에러 읽기: "HttpResponseMessage does not contain a definition for
+//                       'StringContent'" → "StringContent 라는 *프로퍼티*는 없다"
+//                       로 정확히 읽기. StringContent 는 타입이니까.
+//
+// [Q14] Setup<T> 의 T 는 반환 타입 — HttpRequestMessage 와 헷갈리지 말 것.
+//   - 원인: SendAsync 시그니처는
+//           Task<HttpResponseMessage> SendAsync(HttpRequestMessage, CancellationToken).
+//           Setup<T> 의 T 는 *반환 타입* 자리 → Task<HttpResponseMessage>.
+//           ItExpr.IsAny<T>() 의 T 는 *파라미터 타입* 자리 → HttpRequestMessage 등.
+//           이름이 닮은 두 타입이 한 호출 안에 등장해 혼동하기 쉬움.
+//   - 에러 메시지 읽기: "Expression of type 'Task<HttpResponseMessage>' cannot be
+//                       used for return type 'Task<HttpRequestMessage>'" →
+//                       ReturnsAsync 가 넘긴 응답 객체가 Setup<T> 가 약속한 반환
+//                       타입과 안 맞음 → Setup<T> 의 T 가 잘못 적힌 것.
+//   - 자리별 매칭법:
+//        Setup<...>                       ← 반환 타입: Task<HttpResponseMessage>
+//        ItExpr.IsAny<...>() (1번째)       ← 파라미터: HttpRequestMessage
+//        ItExpr.IsAny<...>() (2번째)       ← 파라미터: CancellationToken
+//
+// [Q15] await using var _ = sut.GetStringAsync(...) 는 왜 안 되나?
+//   - 원인 ①: GetStringAsync 의 결과(await 후)는 string. string 은 IDisposable /
+//             IAsyncDisposable 둘 다 구현하지 않음 → using/await using 자격 미달.
+//   - 원인 ②: await using 은 두 일을 동시에 함 —
+//             (1) `var x = expr` 로 대입 (await 키워드는 우변에 안 붙음)
+//             (2) 스코프 종료 시 await x.DisposeAsync() 호출
+//             x 의 컴파일 타임 타입이 IAsyncDisposable 이어야 (2) 성립.
+//   - 비교: GetStreamAsync → await 후 Stream → Stream 은 IDisposable + IAsyncDisposable
+//          → await using var _ = await sut.GetStreamAsync(...) 성립.
+//          GetStringAsync → await 후 string → 자원 없음 → using 못 붙임.
+//   - 해결: 결과를 안 쓸 때는 그냥 `await sut.GetStringAsync("/...")`.
+//          명시적 discard 가 필요하면 `_ = await sut.GetStringAsync("/...")`.
+//   - 원칙: using/await using 은 "해제할 자원이 있을 때" 만. string/int/Task 결과
+//          같은 자원 없는 값에는 붙이지 않음.
 // ============================================================================
 
 using Feature.Transfer;
@@ -130,17 +195,16 @@ namespace Test.Transfer
             // [Q7] Content 가 없으면 GetStreamAsync 가 빈 스트림을 반환.
             //      ReturnsAsync 에 람다(() => new ...) 형태 유지 → 매 호출마다 새 인스턴스
             //      (HttpResponseMessage 가 IDisposable 이라 인스턴스 재사용 시 문제).
-            _handlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>
-                (
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                ).ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StreamContent(stream)
-                }
-                );
+                });
 
             await using var result = await sut.GetStreamAsync("/");
             using var streamReader = new StreamReader(result);
@@ -154,9 +218,9 @@ namespace Test.Transfer
             // SendAsync 가 정확히 1번 호출됐는지 확인.
             // (구현이 HttpClient 를 우회해 하드코딩된 값을 반환해도 Assert.Equal 은
             //  통과할 수 있으므로, 실제로 HTTP 파이프라인을 탔는지 검증.)
-            _handlerMock.Protected()
-                .Verify<Task<HttpResponseMessage>>
-                (
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
                     "SendAsync", Times.Once(),
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
@@ -174,27 +238,145 @@ namespace Test.Transfer
             };
             var sut = new HttpTransferClient(client, options);
 
-            _handlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>
-                (
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                ).ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new ByteArrayContent([])
                 });
 
             await using var _ = await sut.GetStreamAsync("/some");
 
-            _handlerMock.Protected()
-                .Verify<Task<HttpResponseMessage>>
-                (
-                    "SendAsync", Times.Once(),
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
                     ItExpr.Is<HttpRequestMessage>(r =>
                         r.Method == HttpMethod.Get && r.RequestUri!.AbsolutePath == "/some"),
                     ItExpr.IsAny<CancellationToken>()
                 );
+        }
+
+        [Theory]
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.Unauthorized)]
+        public async Task GetStreamAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException(HttpStatusCode statusCode)
+        {
+            using var client = new HttpClient(_handlerMock.Object, false);
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = "http://localhost",
+                TimeoutSeconds = 30
+            };
+            var sut = new HttpTransferClient(client, options);
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(statusCode));
+
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(() => sut.GetStreamAsync("/"));
+            Assert.Equal(statusCode, ex.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetStringAsync_WhenResponseOk_ReturnsStringContent()
+        {
+            using var client = new HttpClient(_handlerMock.Object, false);
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = "http://localhost",
+                TimeoutSeconds = 60,
+            };
+            var sut = new HttpTransferClient(client, options);
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("200 Ok")
+                });
+
+            Assert.Equal("200 Ok", await sut.GetStringAsync("/"));
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync", Times.Once(),
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Fact]
+        public async Task GetStringAsync_WithRelativePath_SendsGetToBaseAddressPlusPath()
+        {
+            using var client = new HttpClient(_handlerMock.Object, false);
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = "http://localhost",
+                TimeoutSeconds = 60,
+            };
+            var sut = new HttpTransferClient(client, options);
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK));
+
+            await sut.GetStringAsync("/some");
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(r =>
+                        r.Method == HttpMethod.Get && r.RequestUri!.AbsolutePath == "/some"),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Theory]
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.Unauthorized)]
+        public async Task GetStringAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException(HttpStatusCode statusCode)
+        {
+            using var client = new HttpClient(_handlerMock.Object, false);
+            var options = new HttpTransferOptions()
+            {
+                BaseAddress = "http://localhost",
+                TimeoutSeconds = 60,
+            };
+            var sut = new HttpTransferClient(client, options);
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(statusCode));
+
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(() => sut.GetStringAsync("/"));
+            Assert.Equal(statusCode, ex.StatusCode);
         }
     }
 }
