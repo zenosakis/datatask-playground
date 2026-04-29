@@ -427,3 +427,11 @@ FodyWeavers.xsd
 *.msm
 *.msp
 Test.RunConsole/appsettings.local.json
+
+# Claude Code (local settings & worktrees — keep .claude/commands/ tracked)
+.claude/settings.json
+.claude/settings.local.json
+.claude/worktrees/
+
+# JetBrains Rider / IntelliJ IDEA
+.idea/
