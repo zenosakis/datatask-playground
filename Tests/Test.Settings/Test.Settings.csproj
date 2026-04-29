@@ -7,6 +7,7 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <RootNamespace>Test.Settings</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Feature.LoadSettings\Feature.LoadSettings.csproj" />
+    <ProjectReference Include="..\..\Feature.Settings\Feature.Settings.csproj" />
     <ProjectReference Include="..\..\Feature.Encryption\Feature.Encryption.csproj" />
   </ItemGroup>
 

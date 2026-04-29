@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration; // appsettings.json 설정 불러오�
 using Feature.Logger;
 using Serilog;
 // 설정정보용 참조
-using Feature.LoadSettings;
+using Feature.Settings;
 using Feature.Dapper;
 using Feature.Encryption;
 using Feature.Encryption.Interfaces;
@@ -20,7 +20,7 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 // 로그
-SerilogTest.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
+SerilogConfigurator.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
 Log.Information("=== 콘솔 프로그램 시작 ===");
 Log.Debug(AppContext.BaseDirectory); // appsettings.json 위치해야 할 경로
 
@@ -29,7 +29,7 @@ var encryptionOptions = new EncryptionOptions(configuration["Key"], configuratio
 IEncryptor encryptor = new AesCbcEncryptor(encryptionOptions);
 
 // 설정 로드
-var config = new LoadSettingsTest(configuration, encryptor);
+var config = new SettingsLoader(configuration, encryptor);
 
 // 설정 로그 테스트
 Log.Information("설정 정보:");
@@ -46,10 +46,10 @@ Log.Debug("테스트: {value}", config["DB:Ip"]);
 
 // DB
 using var connection = new SqlConnection($"Server={config["DB:Ip"]},{config["DB:Port"]};Database={config["DB:Database"]};User Id={config["DB:User"]};Password={config["DB:Password"]};TrustServerCertificate=True;");
-var dapper = new DapperTest(connection);
+var dapper = new DapperClient(connection);
 
 // DB 테스트
-var rows = dapper.SelectTest("TBL_DIALEDLOG");
+var rows = dapper.SelectTop10("TBL_DIALEDLOG");
 foreach (var row in rows)
 {
     Log.Information("   DIALEDKEY: {Key}", row.DIALEDKEY);

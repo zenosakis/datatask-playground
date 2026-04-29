@@ -2,10 +2,10 @@ using Serilog; // Serilog 참조해야 쓸 수 있음 -> NuGet 패키지 Serilog
 
 namespace Feature.Logger
 {
-    public class SerilogTest
+    public class SerilogConfigurator
     {
         /// <summary>
-        /// <para>각 스타트 프로젝트(ASP.NET Core 또는 서비스 등)의 Program.cs 에서 SerilogTest.Configure(); 를 호출해야 함<br/>
+        /// <para>각 스타트 프로젝트(ASP.NET Core 또는 서비스 등)의 Program.cs 에서 SerilogConfigurator.Configure(); 를 호출해야 함<br/>
         /// 이 후 어느 프로젝트에서든 using Serilog; 를 참조 후 Log.Information("=== 서비스 가동 ==="); 와 같이 사용하면 됨</para>
         /// </summary>
         public static void Configure()

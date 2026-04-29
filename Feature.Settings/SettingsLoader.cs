@@ -2,14 +2,14 @@ using Microsoft.Extensions.Configuration; // Nuget 패키지 Microsoft.Extension
 using Microsoft.Extensions.Primitives;
 using Feature.Encryption.Interfaces;
 
-namespace Feature.LoadSettings
+namespace Feature.Settings
 {
-    public class LoadSettingsTest
+    public class SettingsLoader
     {
         private readonly IConfiguration _config;
         private readonly IEncryptor _encryptor;
 
-        public LoadSettingsTest(IConfiguration config, IEncryptor encryptor)
+        public SettingsLoader(IConfiguration config, IEncryptor encryptor)
         {
             _config = config;
             _encryptor = encryptor;

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.Logger", "Feature.Logger\Feature.Logger.csproj", "{8679AFEA-CD76-447E-9EB5-B3DF0281445B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.LoadSettings", "Feature.LoadSettings\Feature.LoadSettings.csproj", "{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.Settings", "Feature.Settings\Feature.Settings.csproj", "{756AF5C4-F640-43FA-AD61-EE5A24C3D8C6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Feature.Dapper", "Feature.Dapper\Feature.Dapper.csproj", "{F28EDCEF-F475-4579-BECD-134A6CF3752F}"
 EndProject
@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.RunConsoleWithBuilder"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Encryption", "Tests\Test.Encryption\Test.Encryption.csproj", "{5D0A4E4B-DCE5-4173-84D3-9C63206272B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.LoadSettings", "Tests\Test.LoadSettings\Test.LoadSettings.csproj", "{568790BD-8186-4332-8ED2-4E82ABF04BDF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Settings", "Tests\Test.Settings\Test.Settings.csproj", "{568790BD-8186-4332-8ED2-4E82ABF04BDF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Transfer", "Feature.Transfer\Feature.Transfer.csproj", "{F56B4246-4028-461A-A54D-54D25BCC981B}"
 EndProject

@@ -5,7 +5,7 @@ using Playground.CSharp;
 using System.Text;
 
 // 로그
-SerilogTest.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
+SerilogConfigurator.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
 Log.Information("=== 콘솔 프로그램 시작 ===");
 
 

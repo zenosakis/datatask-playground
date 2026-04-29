@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration; // appsettings.json 설정 불러오�
 using Feature.Logger;
 using Serilog;
 // 설정정보용 참조
-using Feature.LoadSettings;
+using Feature.Settings;
 using Feature.Dapper;
 using Feature.Encryption;
 using Feature.Encryption.Interfaces;
@@ -38,7 +38,7 @@ builder.Services.Configure<EncryptionOptions>(
     builder.Configuration.GetSection("Encryption")
 );
 builder.Services.AddSingleton<IEncryptor, AesCbcEncryptor>();
-builder.Services.AddSingleton<LoadSettingsTest>();
+builder.Services.AddSingleton<SettingsLoader>();
 // DB 옵션 설정 추가
 builder.Services.Configure<DbOptions>(
     builder.Configuration.GetSection("DB")
@@ -52,7 +52,7 @@ builder.Services.AddScoped<IDbConnection>(sp =>
     return new SqlConnection(opt.ToConnectionString());
 });
 // 실제 사용할 Dapper 클래스 주입 -> 여기선 IDbConnection 을 요구(DI 주입) -> 여기선 IOptions<DbOptions> 를 요구 -> IOptions<DbOptions> 는 이미 Configure 로 등록되어있음 (PostConfigure 를 통해 복호화까지 되어있음)
-builder.Services.AddScoped<DapperTest>();
+builder.Services.AddScoped<DapperClient>();
 
 // HTTP
 builder.Services.Configure<HttpTransferOptions>(
@@ -65,11 +65,11 @@ builder.Services.AddScoped<HttpTransferClient>();
 using var host = builder.Build();
 
 // 로그
-SerilogTest.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
+SerilogConfigurator.Configure(); // Configure 를 호출해줘야 로그 기록이 시작 됨
 Log.Information("=== 콘솔 프로그램 시작 ===");
 Log.Debug(AppContext.BaseDirectory); // appsettings.json 위치해야 할 경로
 
-var config = host.Services.GetRequiredService<LoadSettingsTest>();
+var config = host.Services.GetRequiredService<SettingsLoader>();
 // 설정 로그 테스트
 Log.Information("설정 정보:");
 foreach (var pair in config.AsEnumerable())
@@ -80,18 +80,18 @@ Log.Debug("테스트: {value}", config["MyValue:TestKey"]);
 Log.Debug("테스트: {value}", config["DB:Ip"]);
 
 // DB
-var dapper = host.Services.GetRequiredService<DapperTest>();
+var dapper = host.Services.GetRequiredService<DapperClient>();
 
 // DB 테스트
-var rows = dapper.SelectTest("TBL_DIALEDLOG");
+var rows = dapper.SelectTop10("TBL_DIALEDLOG");
 foreach (var row in rows)
 {
     Log.Information("   DIALEDKEY: {Key}", row.DIALEDKEY);
 }
 
 // HTTP 테스트
-var http = host.Services.GetRequiredService<HttpTransferClient>();
-await http.GetStreamAsync("/");
+// var http = host.Services.GetRequiredService<HttpTransferClient>();
+// await http.GetStreamAsync("/");
 
 
 Log.Information("=== 콘솔 프로그램 종료 ===");

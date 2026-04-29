@@ -1,20 +1,20 @@
 using Feature.Encryption.Interfaces;
-using Feature.LoadSettings;
+using Feature.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Moq;
 
-namespace Test.LoadSettings
+namespace Test.Settings
 {
-    public class TestLoadSettings
+    public class TestSettingsLoader
     {
         private readonly Mock<IConfiguration> _configMock = new();
         private readonly Mock<IEncryptor> _encryptorMock = new();
-        private readonly LoadSettingsTest _sut; // SUT = System Under Tests (관례적 명칭이라고 함)
+        private readonly SettingsLoader _sut; // SUT = System Under Tests (관례적 명칭이라고 함)
 
-        public TestLoadSettings()
+        public TestSettingsLoader()
         {
-            _sut = new LoadSettingsTest(_configMock.Object, _encryptorMock.Object);
+            _sut = new SettingsLoader(_configMock.Object, _encryptorMock.Object);
         }
 
         [Fact]
