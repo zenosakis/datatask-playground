@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Feature.Encryption\Feature.Encryption.csproj" />
+    <ProjectReference Include="..\..\src\Feature.Encryption\Feature.Encryption.csproj" />
   </ItemGroup>
 
   <ItemGroup>

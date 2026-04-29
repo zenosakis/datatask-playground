@@ -207,16 +207,16 @@ using Moq.Protected;
 using System.Net;
 using System.Text;
 
-namespace Test.Transfer
+namespace Feature.Transfer.Tests
 {
-    public class TestHttpTransferClient : IDisposable
+    public class HttpTransferClientTests : IDisposable
     {
         // [Q9] Strict 모드 — Setup 하지 않은 호출은 즉시 예외.
         //      오타/매칭 실수를 조용히 넘기지 않아 학습 단계에 유리.
         private readonly Mock<HttpMessageHandler> _handlerMock = new(MockBehavior.Strict);
         private readonly HttpClient _client;
 
-        public TestHttpTransferClient()
+        public HttpTransferClientTests()
         {
             _client = new HttpClient(_handlerMock.Object, disposeHandler: false);
         }

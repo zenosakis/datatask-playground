@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Playground.CSharp
+namespace Sandbox.CSharp
 {
     /// <summary>
     /// <para>단순 const 모음 클래스 -> 따로 생성자 없이 <c>GlobalConsts.Name</c> 식으로 사용</para>

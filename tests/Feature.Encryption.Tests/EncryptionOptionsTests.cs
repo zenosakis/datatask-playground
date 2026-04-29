@@ -1,9 +1,9 @@
 using Feature.Encryption;
 using System.Text;
 
-namespace Test.Encryption
+namespace Feature.Encryption.Tests
 {
-    public class TestEncryptOptions
+    public class EncryptionOptionsTests
     {
         const string Key = "12345678901234567890123456789012";
         const string Iv = "1234567890123456";

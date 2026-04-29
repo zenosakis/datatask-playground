@@ -1,8 +1,8 @@
 using Feature.Transfer;
 
-namespace Test.Transfer
+namespace Feature.Transfer.Tests
 {
-    public class TestHttpTransferOptions
+    public class HttpTransferOptionsTests
     {
         [Fact]
         public void HttpTransferOptions_GetBaseAddress_ReturnsBaseAddress()

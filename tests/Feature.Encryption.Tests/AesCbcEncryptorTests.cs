@@ -1,8 +1,8 @@
 using Feature.Encryption;
 
-namespace Test.Encryption
+namespace Feature.Encryption.Tests
 {
-    public class TestAesCbcEncryptor
+    public class AesCbcEncryptorTests
     {
         const string Key = "12345678901234567890123456789012";
         const string Iv = "1234567890123456";

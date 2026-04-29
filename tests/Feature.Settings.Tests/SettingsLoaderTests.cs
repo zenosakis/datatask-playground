@@ -4,15 +4,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Moq;
 
-namespace Test.Settings
+namespace Feature.Settings.Tests
 {
-    public class TestSettingsLoader
+    public class SettingsLoaderTests
     {
         private readonly Mock<IConfiguration> _configMock = new();
         private readonly Mock<IEncryptor> _encryptorMock = new();
         private readonly SettingsLoader _sut; // SUT = System Under Tests (관례적 명칭이라고 함)
 
-        public TestSettingsLoader()
+        public SettingsLoaderTests()
         {
             _sut = new SettingsLoader(_configMock.Object, _encryptorMock.Object);
         }
