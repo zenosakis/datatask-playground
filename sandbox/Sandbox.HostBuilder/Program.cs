@@ -12,6 +12,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Data;
+using Feature.Dapper.Interfaces;
 using Microsoft.Extensions.Options;
 using Feature.Transfer;
 
@@ -51,6 +52,7 @@ builder.Services.AddScoped<IDbConnection>(sp =>
     var opt = sp.GetRequiredService<IOptions<DbOptions>>().Value;
     return new SqlConnection(opt.ToConnectionString());
 });
+builder.Services.AddScoped<IDapperAdapter, DapperAdapter>();
 // 실제 사용할 Dapper 클래스 주입 -> 여기선 IDbConnection 을 요구(DI 주입) -> 여기선 IOptions<DbOptions> 를 요구 -> IOptions<DbOptions> 는 이미 Configure 로 등록되어있음 (PostConfigure 를 통해 복호화까지 되어있음)
 builder.Services.AddScoped<DapperClient>();
 
@@ -88,6 +90,14 @@ foreach (var row in rows)
 {
     Log.Information("   DIALEDKEY: {Key}", row.DIALEDKEY);
 }
+
+// 아래 테이블은 허용하지 않음. 오류 발생
+// Unhandled exception. System.ArgumentException: 허용하지 않은 테이블: TEST
+// var rows2 = dapper.SelectTop10("TEST");
+// foreach (var row in rows2)
+// {
+//     Log.Information("   TEST: {Key}", row.TEST);
+// }
 
 // HTTP 테스트
 // var http = host.Services.GetRequiredService<HttpTransferClient>();

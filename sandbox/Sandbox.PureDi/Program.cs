@@ -46,7 +46,8 @@ Log.Debug("테스트: {value}", config["DB:Ip"]);
 
 // DB
 using var connection = new SqlConnection($"Server={config["DB:Ip"]},{config["DB:Port"]};Database={config["DB:Database"]};User Id={config["DB:User"]};Password={config["DB:Password"]};TrustServerCertificate=True;");
-var dapper = new DapperClient(connection);
+var dbAdapter = new DapperAdapter(connection);
+var dapper = new DapperClient(dbAdapter);
 
 // DB 테스트
 var rows = dapper.SelectTop10("TBL_DIALEDLOG");

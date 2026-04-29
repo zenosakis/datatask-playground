@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Transfer", "src\Fea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Transfer.Tests", "tests\Feature.Transfer.Tests\Feature.Transfer.Tests.csproj", "{077BD5ED-325D-4BCA-A71F-933682D3A427}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Feature.Dapper.Tests", "tests\Feature.Dapper.Tests\Feature.Dapper.Tests.csproj", "{E28FE39C-F931-4715-840B-558921391CE4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{077BD5ED-325D-4BCA-A71F-933682D3A427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E28FE39C-F931-4715-840B-558921391CE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E28FE39C-F931-4715-840B-558921391CE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E28FE39C-F931-4715-840B-558921391CE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E28FE39C-F931-4715-840B-558921391CE4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
