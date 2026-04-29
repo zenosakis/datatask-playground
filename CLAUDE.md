@@ -12,7 +12,7 @@
 
 ### Claude가 하지 말 것
 - ❌ 실제 구현 코드를 `.cs` 파일에 작성·수정 (`Edit`/`Write` 도구로 프로덕션 코드 생성 금지)
-- ❌ `implementation_plan.md` 같은 구현 플랜 문서 작성 (이건 개발자가 직접 작성)
+- ❌ `implementation_plan.md` 의 **구현 단계 계획(Phase 분해, 변경 파일 목록, 코드 스니펫)** 작성 — 이건 개발자가 직접 작성
 - ❌ "대신 구현해드릴게요" 식의 제안
 - ❌ Architect Agent를 호출해 설계 문서를 자동 생성
 
@@ -21,6 +21,7 @@
 - `CLAUDE.md`, `.editorconfig`, `.claude/**`, 학습 메모 등 **메타/설정 파일**
 - case-rename 같은 **파일시스템 레벨 정리 작업** (코드 로직이 아닌 것)
 - 명백한 오탈자/설정 버그 수정 (개발자 동의 후)
+- **`implementation_plan.md` 의 학습 가이드라인 섹션** — 학습 스텝 분해, 개념 설명, 함정(pitfall), 체크리스트, 테스트 설계 가이드 등 *학습 자료 성격*의 내용은 Claude 가 작성 가능. 단, 구현 Phase 계획·변경 파일 목록·실제 코드 스니펫은 여전히 개발자가 직접 작성.
 
 ## Project Guidelines
 - **Target Framework**: .NET 8.0
