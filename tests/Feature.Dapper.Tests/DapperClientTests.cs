@@ -76,6 +76,7 @@
 //   - 적용 불가:
 //     · 인터페이스 추상 메서드 ← 본 케이스
 
+using System.Data.Common;
 using Feature.Dapper.Interfaces;
 using Moq;
 
@@ -94,9 +95,22 @@ public class DapperClientTests
     [Fact]
     public void SelectTop10_WithAllowedTable_CallsQuery()
     {
+        const string tableName = "TBL_DIALEDLOG";
         _dapperMock.Setup(dbAdapter => dbAdapter.Query(It.IsAny<string>())).Returns(new List<dynamic>());
-        var _ = _sut.SelectTop10("TBL_DIALEDLOG");
+        _ = _sut.SelectTop10(tableName);
 
-        _dapperMock.Verify(dbAdapter => dbAdapter.Query(It.IsAny<string>()), Times.Once);
+        _dapperMock.Verify(dbAdapter => dbAdapter.Query(It.Is<string>(sql => sql.Contains(tableName))), Times.Once);
     }
+
+    [Fact]
+    public void SelectTop10_WithDisallowedTable__ThrowsAndDoesNotCallAdapter()
+    {
+        // tableName은 "TBL_DIALEDLOG" 만 허용함
+        const string tableName = "DISALLOWED_TABLE";
+        var ex = Assert.Throws<ArgumentException>(() => _sut.SelectTop10(tableName));
+        Assert.Contains(tableName, ex.Message);
+        _dapperMock.Verify(dbAdapter => dbAdapter.Query(It.IsAny<string>()), Times.Never);
+    }
+
+    // (선택) MockBehavior.Strict 도입 — HttpTransferClient 패턴 일관성
 }
