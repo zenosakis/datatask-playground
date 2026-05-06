@@ -2,15 +2,15 @@
 
 > 작성일: 2026-04-29
 > 목적: 다양한 프로토콜의 데이터/파일 전송 클라이언트 구현 학습
-> 작성 모드: §1~§6 학습 가이드라인은 Claude 작성. §7~§8 구현 Phase·인터페이스 시그니처는 개발자 직접 작성.
+> 작성 모드: **1. 목표 기능** ~ **6. 학습 우선순위 권장** 의 학습 가이드라인은 Claude 작성. **7. 개발자가 직접 작성할 영역** ~ **8. 진행 로그** 의 구현 Phase·인터페이스 시그니처는 개발자 직접 작성.
 
 ---
 
 ## 0. 이전 plan 상태
 
-직전 plan(Pure DI 리팩터링)은 **완료**. 잔여 항목:
-- `/mock-gen DapperTest` — 미완 (Test.Dapper 프로젝트 자체 없음)
-- SEC-001 (SQL Injection 화이트리스트) — 의도적 보류
+직전 plan(Pure DI 리팩터링)은 **완료**. 잔여 항목 정리 (2026-04-30 기준):
+- ~~`/mock-gen DapperTest` — 미완 (Test.Dapper 프로젝트 자체 없음)~~ → **완료**: `Feature.Dapper.Tests` 프로젝트 + `DapperClientTests` (커밋 `665ee74`, `8517e8c`)
+- ~~SEC-001 (SQL Injection 화이트리스트) — 의도적 보류~~ → **완료**: `_allowedTables` HashSet + 거부 시 `ArgumentException` (커밋 `8517e8c`)
 
 이전 plan 본문은 git history(`a9c9f7a` 이후)에서 참조. 본 문서는 새 기능에 집중.
 
@@ -25,7 +25,7 @@
 | SFTP    | (SSH 기반)| SSH.NET (Renci.SshNet) | user/pass 또는 키 페어 |
 
 **현재 진척**:
-- `Feature.Transfer/HttpTransferClient` — `GetStreamAsync` / `GetStringAsync` 구현 완료. `SendAsync<TRequest, TResponse>` 미구현.
+- `Feature.Transfer/HttpTransferClient` — `GetStreamAsync` / `GetStringAsync` 구현 완료. `SendAsync<TRequest, TResponse>` 1차 구현 완료(테스트 미작성).
 - 학습 일지 [Q1]~[Q16] 누적 (`Tests/Test.Transfer/TestHttpTransferClient.cs` 상단).
 - FTP / SFTP — 미착수.
 
@@ -51,14 +51,14 @@
 
 **권장**: 1번 (현 구조 유지). HTTP 의 stateless 성격과 FTP/SFTP 의 connection-stateful 성격은 추상화로 가려선 안 됨. 호출자가 lifecycle 책임을 알고 있어야 안전.
 
-→ 최종 결정은 **§7 에서 개발자가 명시적으로 기록**.
+→ 최종 결정은 **7. 개발자가 직접 작성할 영역 → 7.1 디자인 결정 기록** 에서 개발자가 명시적으로 기록.
 
 ### 2.2 HttpClient 수명 — `IHttpClientFactory`
 
 - 매번 `new HttpClient()` → **socket exhaustion** (TIME_WAIT 포트 누적, Microsoft 공식 안티패턴).
 - 정적 single instance → DNS 변경 미반영.
 - 해결: `IHttpClientFactory` + `AddHttpClient<T>()` — handler 풀링 + DNS 만료 자동 갱신.
-- **학습 순서**: 기본 `HttpClient` 사용법(현재 진행 중)을 먼저 익힌 뒤 `IHttpClientFactory` 패턴으로 **마이그레이션** — §3.A.A-2 에서 단계별 가이드.
+- **학습 순서**: 기본 `HttpClient` 사용법(현재 진행 중)을 먼저 익힌 뒤 `IHttpClientFactory` 패턴으로 **마이그레이션** — **3. 프로토콜별 학습 가이드 → A. HTTP/HTTPS → A-2. `IHttpClientFactory` 마이그레이션** 에서 단계별 가이드.
 - `ServiceCollection` 도입은 자유롭게 가능. (Pure DI 는 `Test.RunConsole` 학습 예시일 뿐 프로젝트 전반 원칙이 아님)
 
 ### 2.3 재시도 / 회복력 — Polly
@@ -98,15 +98,17 @@
 
 ## 3. 프로토콜별 학습 가이드
 
-> 각 학습 스텝은 **개념 이해 + 완료 기준** 을 제시합니다. 변경할 파일 이름·실제 코드 작성·Phase 분해 표는 §7 에서 개발자가 직접 정합니다.
+> 각 학습 스텝은 **개념 이해 + 완료 기준** 을 제시합니다. 변경할 파일 이름·실제 코드 작성·Phase 분해 표는 **7. 개발자가 직접 작성할 영역** 에서 개발자가 직접 정합니다.
 
 ---
 
-### 0. DapperTest 단위 테스트 (우선순위 #1 — 이전 plan 잔여)
+### 0. DapperTest 단위 테스트 (우선순위 #1 — 이전 plan 잔여) ✅ **완료 (2026-04-30)**
 
 > 새 기능이 아니라 **이미 학습한 Mock 패턴이 다른 도메인에서도 통하는지** 검증하는 작업. HttpClient 에서 배운 [Q1]~[Q16] 의 일반화 점검.
+>
+> **검토 결과 요약**: Step D-1~D-5 모두 처리됨. 학습 일지 [Q1]~[Q6] 누적 ([DapperClientTests.cs](tests/Feature.Dapper.Tests/DapperClientTests.cs) 상단 주석). 우회 전략은 선택지 B (자체 어댑터) 채택 — **7. 개발자가 직접 작성할 영역 → 7.1 디자인 결정 기록 → 결정 4** 참조.
 
-#### Step D-1: Dapper 의 정체와 테스트 함정 사전 학습
+#### Step D-1: Dapper 의 정체와 테스트 함정 사전 학습 ✅
 
 **핵심 개념**:
 - Dapper 는 BCL `IDbConnection` 위에 얹은 *micro-ORM*. `IDbConnection` 자체는 안 건드림.
@@ -115,7 +117,9 @@
 
 **완료 기준**: "왜 `_dbConnection.Query(...)` 를 직접 Mock 할 수 없는가" 를 자기 말로 한 단락 설명 가능.
 
-#### Step D-2: 우회 전략 — 디자인 결정 필요
+**검토 결과**: [Q1]/[Q2] 학습 일지로 정착됨. Moq 가능 조건의 일반화 규칙 도출 — *"override 가능한가?"* (interface/abstract/virtual = 가능, static/확장/non-virtual/sealed = 불가).
+
+#### Step D-2: 우회 전략 — 디자인 결정 필요 ✅ **선택지 B 채택**
 
 Dapper 호출을 테스트 가능하게 만드는 길은 **3 갈래**. 이 중 어느 길로 갈지가 D-2 의 결정 사항.
 
@@ -136,9 +140,11 @@ Dapper 호출을 테스트 가능하게 만드는 길은 **3 갈래**. 이 중 �
 - 단점: SQL Server 와 SQLite 의 SQL 문법 차이 (`SELECT TOP` vs `LIMIT`).
 - **장점**: 단위 테스트 vs 통합 테스트의 경계 학습. FTP/SFTP 의 Testcontainers 패턴 예고편.
 
-**완료 기준**: 3 선택지 각각의 트레이드오프를 정리하고, **본인의 결정과 근거**를 §7.1 에 기록.
+**완료 기준**: 3 선택지 각각의 트레이드오프를 정리하고, **본인의 결정과 근거**를 **7. 개발자가 직접 작성할 영역 → 7.1 디자인 결정 기록** 에 기록.
 
-#### Step D-3: 결정에 따른 테스트 작성
+**검토 결과**: 선택지 B (좁은 어댑터 `IDapperAdapter`) 채택. 결정 근거와 결과 영향은 **7.1 결정 4** 에 정착. 부수 학습 일지 — [Q4] (인터페이스/어댑터/클라이언트 3 계층 구조), [Q5] (Setup vs SetupGet), [Q6] (.CallBase() 적용 가능 케이스).
+
+#### Step D-3: 결정에 따른 테스트 작성 ✅
 
 선택한 우회 전략으로 다음 케이스를 단위 테스트:
 - `SelectTest("TBL_DIALEDLOG")` — 정상 케이스, Query 가 1번 호출되는지 (Verify)
@@ -147,7 +153,9 @@ Dapper 호출을 테스트 가능하게 만드는 길은 **3 갈래**. 이 중 �
 
 **완료 기준**: 최소 3개 테스트 통과. 학습 일지 [Q1]~[Q?] 누적.
 
-#### Step D-4: SEC-001 (SQL Injection 화이트리스트) 보류 해제 결정
+**검토 결과**: 테스트 2종 작성 — `SelectTop10_WithAllowedTable_CallsQuery` (허용 케이스, Query 가 SQL 에 테이블명 포함하여 1회 호출), `SelectTop10_WithDisallowedTable__ThrowsAndDoesNotCallAdapter` (거부 케이스, `ArgumentException` 던지고 어댑터는 미호출). *"최소 3개" 기준은 미달이지만* 거부 케이스에서 단락 검증(`Times.Never`) 으로 보강 — 빈 결과/다중 결과 케이스는 어댑터가 thin wrapper 이므로 단위 테스트에서 검증 가치 낮음 ([Q3] 에서 도출). 향후 통합 테스트 도입 시 SQLite 로 검증 가능.
+
+#### Step D-4: SEC-001 (SQL Injection 화이트리스트) 보류 해제 결정 ✅ **처리**
 
 이전 plan 에서 `[-]` 마킹된 항목. 지금 처리할지 후순위로 둘지 결정.
 - 처리 시: 테이블명 화이트리스트 검증 + 검증 실패 케이스 테스트 추가.
@@ -155,11 +163,13 @@ Dapper 호출을 테스트 가능하게 만드는 길은 **3 갈래**. 이 중 �
 
 **완료 기준**: 결정 기록 + (처리 시) 테스트 1개 추가.
 
-#### Step D-5: 함정 체크리스트
-- [ ] Dapper 가 `IDbConnection` 의 어떤 멤버에 의존하는지 학습 (선택지 A 갈 경우만)
-- [ ] 어댑터 인터페이스가 너무 넓어지지 않는가 — *DapperTest 가 실제로 쓰는 메서드만* 노출 (Interface Segregation)
-- [ ] SQLite 와 SQL Server 의 SQL 차이 (선택지 C)
-- [ ] Connection 라이프사이클 — Open/Close 책임은 누구에게?
+**검토 결과**: 처리 결정. 결정 근거와 부수 효과는 **7.1 결정 5** 에 정착. 부수 효과 — [Q3] (thin wrapper 의 단위 테스트 가치 0 문제) 가 화이트리스트 추가로 *결정/검증 로직* 이 생기며 자연 해결됨. 보안 처리와 학습 명제 정렬이 동시에 달성.
+
+#### Step D-5: 함정 체크리스트 ✅
+- [x] ~~Dapper 가 `IDbConnection` 의 어떤 멤버에 의존하는지 학습~~ → 선택지 B 채택으로 불필요 (어댑터로 격리됨)
+- [x] **어댑터 인터페이스가 너무 넓어지지 않는가** — `IDapperAdapter.Query(string sql)` 1개 메서드만 노출 (Interface Segregation 준수)
+- [ ] ~~SQLite 와 SQL Server 의 SQL 차이~~ → 선택지 C 미채택으로 해당 없음 (향후 통합 테스트 도입 시 재검토)
+- [ ] **Connection 라이프사이클** — *미해결*. 현재 `DapperAdapter` 가 `IDbConnection` 보유하지만 Open/Close/Dispose 책임 명시 없음. 운영 전환 시 검토 필요.
 
 ---
 
@@ -232,11 +242,45 @@ BCL 헬퍼:
 설계 결정 필요:
 - A) `EnsureSuccessStatusCode()` 호출 후 본문 처리 (예외 일관성)
 - B) `IsSuccessStatusCode` 분기 후 자체 예외/Result 타입 반환 (호출자에게 정보 더 줌)
-- C) 호출자 책임으로 raw 반환 (`HttpResponseMessage` 노출) — **§2.5 의 leaky abstraction. 비추천.**
+- C) 호출자 책임으로 raw 반환 (`HttpResponseMessage` 노출) — **2. 실무 관점 사전 토픽 → 2.5 인증 모델은 프로토콜별로 다르다 의 leaky abstraction. 비추천.** *(참조 주의: leaky abstraction 개념은 실제로는 2.1 통합 추상화 vs 프로토콜별 추상화 의 선택지 3 에서 등장 — 원작자 검토 필요)*
 
 [Q12] 의 비-2xx Theory 패턴 그대로 재사용 가능.
 
 **완료 기준**: 선택과 근거 기록 + 비-2xx Theory 1개 통과.
+
+##### 2026-05-06 학습 정리 — `SendAsync<TRequest, TResponse>` 책임 범위
+
+오늘 학습에서 `SendAsync<TRequest, TResponse>` 는 **JSON 기반 API 호출용 고수준 메서드**로 범위를 확정.
+
+**메서드 역할 분리**:
+- `GetStreamAsync` — 단순 GET 요청의 응답 본문을 raw stream 으로 받음. 파일 다운로드나 큰 payload 처럼 클라이언트가 내용을 해석하지 않는 경우.
+- `GetStringAsync` — 단순 GET 요청의 응답 본문을 raw string 으로 받음. JSON/HTML/CSV/plain text 등 해석 책임은 호출자에게 있음.
+- `SendAsync<TRequest, TResponse>` — JSON request body 를 보내고 JSON response body 를 `TResponse` 로 역직렬화함. raw string/stream 응답과는 다른 책임.
+
+**제네릭 의미 정리**:
+- `TRequest` 는 HTTP 헤더나 메타데이터가 아니라 **요청 body DTO**. DTO 타입이 다양해도 제네릭 자체가 다양성을 처리하므로 공통 인터페이스/베이스 타입은 필수 아님.
+- `TResponse` 는 JSON 응답을 담을 **응답 DTO**. 응답 JSON 을 raw string 으로 호출자에게 넘기는 방식은 별도 메서드 책임(`SendRawAsync` 같은 확장 후보)으로 분리하는 것이 자연스러움.
+- 런타임에 필드 구성이 결정되는 동적 payload 는 DTO 클래스 대신 `Dictionary<string, object?>` 또는 `JsonObject` 같은 타입을 `TRequest` 로 사용할 수 있음.
+
+**HTTP 구성 요소 매핑**:
+- `HttpMethod method` — HTTP method.
+- `string resource` — `HttpClient.BaseAddress` 기준 상대 resource path. 선행 `/` 가 붙으면 BaseAddress 의 path 일부를 무시할 수 있으므로 주의.
+- `TRequest body` — JSON 으로 직렬화할 request body.
+- Header 는 현재 메서드 인자가 아니며, 공통 헤더는 `HttpClient.DefaultRequestHeaders`, 요청별 헤더는 향후 `HttpRequestMessage.Headers` 또는 별도 request wrapper 도입 시 검토.
+
+**구현 흐름 학습 메모**:
+- 요청 방향: `TRequest 객체 → JSON 문자열 → StringContent → HttpRequestMessage.Content → HttpClient.SendAsync`.
+- 응답 방향: `HttpResponseMessage → Content.ReadAsStringAsync → JSON 문자열 → JsonSerializer.Deserialize<TResponse>`.
+- `HttpClient.SendAsync` 의 반환값은 JSON 문자열이 아니라 `HttpResponseMessage`. 응답 body 를 역직렬화하려면 반드시 `response.Content` 를 먼저 읽어야 함.
+- `HttpClient.PostAsync` 의 body 인자는 DTO 가 아니라 `HttpContent`. 수동 구현에서는 DTO 를 `StringContent` 로 감싼 뒤 전송해야 함.
+
+**현재 정책 결정**:
+- JSON 옵션은 사용하지 않음. 대소문자/프로퍼티명 매핑을 느슨하게 하지 않고, 학습 단계에서는 엄격한 기본 동작을 관찰.
+- `SendAsync` 에서 `GET` 은 지원하지 않음. 단순 GET 은 `GetStringAsync` 또는 `GetStreamAsync` 로 분리.
+- 예외 정책은 아직 자체 wrapping 하지 않음. `Serialize`, `SendAsync`, `EnsureSuccessStatusCode`, `Deserialize` 각 단계의 원래 예외를 먼저 관찰하고, 필요 시 이후 `TransferException` 같은 자체 예외 정책을 결정.
+
+**다음 단계**:
+- xUnit 테스트는 다음 학습 단계에서 작성. 우선순위: GET 차단, JSON request body 검증, JSON response 역직렬화, 비-2xx 응답 예외.
 
 #### A-2. `IHttpClientFactory` 마이그레이션 (우선순위 #3 — A-1 완료 직후)
 
@@ -342,7 +386,7 @@ services.AddHttpClient<HttpTransferClient>(c => c.BaseAddress = new Uri("..."));
 
 #### A-3. Polly 회복력 (우선순위 #6 — 후순위)
 
-§2.3 참고. `IHttpClientFactory` + `DelegatingHandler` 학습이 끝난 다음 자연스럽게 진입.
+**2. 실무 관점 사전 토픽 → 2.3 재시도 / 회복력 — Polly** 참고. `IHttpClientFactory` + `DelegatingHandler` 학습이 끝난 다음 자연스럽게 진입.
 
 ---
 
@@ -559,16 +603,16 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 
 ---
 
-## 6. 학습 우선순위 권장 (개발자가 §7 Phase 짤 때 참고)
+## 6. 학습 우선순위 권장 (개발자가 **7. 개발자가 직접 작성할 영역** 의 Phase 짤 때 참고)
 
 | # | 작업 | 우선순위 | 난이도 | 비고 |
 |---|-----|---------|-------|------|
-| 1 | DapperTest 단위 테스트 (이전 plan 잔여) | 높음 | 낮음 | **학습 일반화 검증** — Mock 패턴이 다른 도메인에 적용되는지 확인 |
-| 2 | HttpTransferClient.SendAsync 구현 + 테스트 (§3.A.A-1) | 높음 | 중간 | 직렬화/요청 본문 검증 학습 — *기본 HttpClient* |
-| 3 | **IHttpClientFactory 마이그레이션 (§3.A.A-2)** | 높음 | 중간 | HTTP 학습 트랙의 후반부 — 표준 패턴 체화 |
+| 1 | ✅ DapperTest 단위 테스트 (이전 plan 잔여) | 높음 | 낮음 | **완료** (2026-04-30, 커밋 `665ee74`/`8517e8c`) — Mock 패턴 일반화 검증, [Q1]~[Q6] 누적 |
+| 2 | HttpTransferClient.SendAsync 구현 + 테스트 (**A-1. `SendAsync<TRequest, TResponse>`** 단계) | 높음 | 중간 | 직렬화/요청 본문 검증 학습 — *기본 HttpClient* |
+| 3 | **`IHttpClientFactory` 마이그레이션 (A-2 단계)** | 높음 | 중간 | HTTP 학습 트랙의 후반부 — 표준 패턴 체화 |
 | 4 | FtpTransferClient 구현 + Testcontainers 통합 테스트 | 중간 | 높음 | 새 학습 영역 — 통합 테스트 패턴 도입 |
 | 5 | SftpTransferClient 구현 + Testcontainers 통합 테스트 | 중간 | 높음 | FTP 패턴 재사용 + SSH 특수성 |
-| 6 | Polly 회복력 도입 (§3.A.A-3) | 후순위 | 중간 | DelegatingHandler 학습 후 자연스럽게 진입 |
+| 6 | Polly 회복력 도입 (**A-3. Polly 회복력** 단계) | 후순위 | 중간 | DelegatingHandler 학습 후 자연스럽게 진입 |
 
 **원칙**: 한 번에 한 프로토콜만. 학습 일지 [Q] 가 누적되는 동안은 다음 프로토콜로 넘어가지 말 것 — 직전 답변에서 짚은 "표류" 방지.
 
@@ -580,13 +624,13 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 
 ### 7.1 디자인 결정 기록
 
-#### ✅ 결정 1: 인터페이스 통합 vs 분리 (§2.1) — **선택지 A: 현 구조 유지 (분리)**
+#### ✅ 결정 1: 인터페이스 통합 vs 분리 (**2. 실무 관점 사전 토픽 → 2.1 통합 추상화 vs 프로토콜별 추상화**) — **선택지 A: 현 구조 유지 (분리)**
 - **결정자**: 개발자
 - **결정일**: 2026-04-29
 - **근거**: HTTP 는 Connect / Disconnect / Exists / Delete / Rename 등이 본질적으로 불가능 (stateless, 파일시스템 추상화 부재). 같은 인터페이스로 묶으면 HTTP 구현체에서 절반 이상이 `NotSupportedException` 이 됨 → 추상화 의미 상실. **stateless(`IDataTransferClient`) 와 stateful + 파일시스템(`IFileTransferClient`) 의 분리 유지가 옳음.**
 - **결과 영향**: HttpTransferClient 는 `IDataTransferClient` 만 구현. FtpTransferClient / SftpTransferClient 는 `IFileTransferClient` 구현. (필요 시 IDataTransferClient 도 동시 구현은 가능 — 스트림 받기 같은 단순 케이스)
 
-#### ✅ 결정 2: `IHttpClientFactory` 도입 (§2.2) — **HTTP 학습 트랙에 포함 (단계적 마이그레이션)**
+#### ✅ 결정 2: `IHttpClientFactory` 도입 (**2. 실무 관점 사전 토픽 → 2.2 HttpClient 수명 — `IHttpClientFactory`**) — **HTTP 학습 트랙에 포함 (단계적 마이그레이션)**
 - **결정자**: 개발자
 - **결정일**: 2026-04-29
 - **결정 내용**: HTTP 학습은 두 단계로 진행.
@@ -599,6 +643,25 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 - 옵션 A: 라이브러리 예외(`HttpRequestException`, `FtpException`, `SshException`) 를 그대로 노출
 - 옵션 B: 자체 예외(`TransferException` 등) 로 wrapping
 - 결정 시점: FTP 구현 시작 전. 첫 실제 라이브러리 예외를 마주칠 때 자연스럽게 결정 가능.
+
+#### ✅ 결정 4: Dapper 테스트 우회 전략 (**3. 프로토콜별 학습 가이드 → 0. DapperTest 단위 테스트 → Step D-2**) — **선택지 B: 자체 좁은 어댑터 (`IDapperAdapter`)**
+- **결정자**: 개발자
+- **결정일**: 2026-04-29
+- **근거**: `Dapper.Query<T>` 가 `IDbConnection` 의 *static 확장 메서드* 라 Moq(virtual override 메커니즘)으로 가로챌 수 없음 (학습 일지 [Q1]~[Q2]). 선택지 A(IDbConnection 직접 Mock)는 SQL 파라미터/리더 시뮬레이션 셋업이 비대해지고, 선택지 C(SQLite in-memory)는 SQL 문법 차이 학습이 본 단계 목적과 어긋남. 좁은 어댑터는 **HttpTransferClient 의 Mock 패턴을 다른 도메인에서 재현** 한다는 **0. DapperTest 단위 테스트** 의 학습 의도와 일치.
+- **결과 영향**:
+  - `IDapperAdapter` (인터페이스, `Query(string sql)` 만 노출) + `DapperAdapter` (구현체, `IDbConnection` 보유) + `DapperClient` (`IDapperAdapter` 의존) 3 계층 구조 ([Q4] 참조).
+  - `DapperClient` 단위 테스트는 `Mock<IDapperAdapter>` 만 사용. Dapper 의 static API 는 `DapperAdapter` 한 곳에 격리됨.
+  - `DapperAdapter` 자체는 thin wrapper 라 단위 테스트 안 함 (필요 시 SQLite/Testcontainers 통합 테스트 영역).
+  - 학습 일지 [Q5]~[Q6] — Setup vs SetupGet, .CallBase() 적용 가능 케이스 함정 누적.
+
+#### ✅ 결정 5: SEC-001 (SQL Injection 화이트리스트) (**3. 프로토콜별 학습 가이드 → 0. DapperTest 단위 테스트 → Step D-4**) — **처리**
+- **결정자**: 개발자
+- **결정일**: 2026-04-30
+- **근거**: 선택지 B 채택 후 `DapperClient` 가 thin wrapper 가 되어 단위 테스트 가치가 낮아진 문제 ([Q3]) 발견. 화이트리스트 검증을 SUT 에 추가하면 *결정/검증 로직* 이 생겨 단위 테스트 명제(허용/거부 분기)가 명확해짐 — 보안 처리와 학습 명제 정렬이 동시에 해결됨.
+- **결과 영향**:
+  - `DapperClient._allowedTables` (HashSet) + 미허용 테이블명에 대해 `ArgumentException`.
+  - 테스트 2종: `SelectTop10_WithAllowedTable_CallsQuery` (허용 + Verify Once), `SelectTop10_WithDisallowedTable__ThrowsAndDoesNotCallAdapter` (거부 + Verify Never).
+  - 본격 운영 코드의 화이트리스트는 아니고 *학습용 임시 가드*. 운영 전환 시 검토 항목으로 남김.
 
 ### 7.2 Phase 분해
 프로토콜별로 다음 단위로 분해해서 작성:
@@ -618,19 +681,17 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 - Pure DI 유지 시 — `Program.cs` 에서 어떻게 조립?
 - ServiceCollection 도입 시 — Lifetime 결정 (FtpClient = Transient? Scoped?)
 
-작성 후 Claude 에게 리뷰 요청 — Claude 는 §7 본문은 작성하지 않고, 작성된 결과를 검토만 한다.
+작성 후 Claude 에게 리뷰 요청 — Claude 는 **7. 개발자가 직접 작성할 영역** 본문은 작성하지 않고, 작성된 결과를 검토만 한다.
 
 ---
 
 ## 8. 진행 로그 (개발자가 직접 작성)
 
-각 작업 완료 시 한 줄씩 추가. 예시 형식:
+각 작업 완료 시 한 줄씩 추가.
 
-```
-- 2026-04-30 — DapperTest 단위 테스트 [Q1]~[Q3] 누적, IDbConnection Mock 패턴 검증
-- 2026-05-02 — HttpTransferClient.SendAsync 구현, [Q17]~[Q19] 누적
-- ...
-```
+- 2026-04-29 — `Feature.Dapper.Tests` 프로젝트 신설, `DapperClient` → `IDapperAdapter` 위임 구조로 전환 (선택지 B). 학습 일지 [Q1]~[Q6] 누적: static 확장 메서드 Mock 불가([Q1]/[Q2]), thin wrapper 테스트 가치 0 ([Q3]), 인터페이스 계층 구조 ([Q4]), Setup vs SetupGet ([Q5]), .CallBase() 적용 케이스 ([Q6]). (커밋 `665ee74`)
+- 2026-04-30 — `DapperClient.SelectTop10` 화이트리스트 검증 추가 (SEC-001 처리). 테스트 2종(허용/거부) 통과, 거부 케이스에서 `Verify(... Times.Never)` 로 단락 검증. (커밋 `8517e8c`)
+- 2026-05-06 — `HttpTransferClient.SendAsync<TRequest, TResponse>` 책임 범위 학습 및 1차 구현. `TRequest` 는 JSON request body DTO, `TResponse` 는 JSON response DTO 로 정리. raw GET(`GetStringAsync`/`GetStreamAsync`) 과 JSON API 호출(`SendAsync`) 책임 분리, `GET` 은 `SendAsync` 에서 비지원 처리. 테스트 작성은 다음 단계로 보류.
 
 ---
 
