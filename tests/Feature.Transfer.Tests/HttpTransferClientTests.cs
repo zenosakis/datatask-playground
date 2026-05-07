@@ -206,11 +206,24 @@ using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace Feature.Transfer.Tests
 {
     public class HttpTransferClientTests : IDisposable
     {
+        private sealed class TestRequest
+        {
+            public string Name { get; set; } = string.Empty;
+            public int Count { get; set; }
+        }
+
+        private sealed class TestResponse
+        {
+            public string Result { get; set; } = string.Empty;
+            public bool Success { get; set; }
+        }
+
         // [Q9] Strict 모드 — Setup 하지 않은 호출은 즉시 예외.
         //      오타/매칭 실수를 조용히 넘기지 않아 학습 단계에 유리.
         private readonly Mock<HttpMessageHandler> _handlerMock = new(MockBehavior.Strict);
@@ -401,6 +414,142 @@ namespace Feature.Transfer.Tests
 
             var ex = await Assert.ThrowsAsync<HttpRequestException>(() => sut.GetStringAsync("/"));
             Assert.Equal(statusCode, ex.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendAsync_WhenRequestGet_ThrowsNotSupportedException()
+        {
+            // GET 을 허용하지 않고 바로 Throw 하기 때문에, Setup 을 할 필요가 없음
+            var sut = CreateSut("http://localhost", 60);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => sut.SendAsync<TestRequest, TestResponse>(
+                    HttpMethod.Get,
+                    "/some",
+                    new TestRequest()
+                )
+            );
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Never(),
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Fact]
+        public async Task SendAsync_WhenRequest_RequestContentJsonSerialized()
+        {
+            var sut = CreateSut("http://localhost", 60);
+            string? actualRequestJson = null;
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                // 요청 할 당시의 JSON 문자열을 저장하기 위해 콜백함수를 사용함
+                // Mock.Verify 안에서 하기엔 SendAsync 호출 된 후 객체가 파괴되기 때문 (내부에서 using var requestMessage 로 사용하고 있기 때문에 자동 해제됨)
+                .Callback<HttpRequestMessage, CancellationToken>((requestMessage, _) =>
+                {
+                    actualRequestJson = requestMessage.Content!
+                        .ReadAsStringAsync()
+                        .GetAwaiter()
+                        .GetResult();
+                })
+                .ReturnsAsync(() => new HttpResponseMessage()
+                {
+                    Content = new StringContent("{}")
+                });
+
+            var request = new TestRequest()
+            {
+                Name = "test",
+                Count = 10
+            };
+            var requestJson = JsonSerializer.Serialize(request);
+            await sut.SendAsync<TestRequest, TestResponse>(HttpMethod.Post, "/some", request);
+
+            Assert.Equal(requestJson, actualRequestJson);
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Fact]
+        public async Task SendAsync_WhenResponseContentIsJson_ReturnsDeserializedResponse()
+        {
+            var expectedResponse = new TestResponse()
+            {
+                Result = "200 OK",
+                Success = true
+            };
+            var expectedResponseJson = JsonSerializer.Serialize(expectedResponse);
+
+            var sut = CreateSut("http://localhost", 60);
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                ).ReturnsAsync(() => new HttpResponseMessage()
+                {
+                    Content = new StringContent(expectedResponseJson)
+                });
+
+            var actualResponse = await sut.SendAsync<TestRequest, TestResponse>(HttpMethod.Post, "/some", new TestRequest());
+
+            Assert.Equal(expectedResponse.Result, actualResponse.Result);
+            Assert.Equal(expectedResponse.Success, actualResponse.Success);
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Theory]
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.Unauthorized)]
+        public async Task SendAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException(HttpStatusCode statusCode)
+        {
+            var sut = CreateSut("http://localhost", 60);
+
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() => new HttpResponseMessage(statusCode));
+
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(() => sut.SendAsync<TestRequest, TestResponse>(HttpMethod.Post, "/some", new TestRequest()));
+            Assert.Equal(statusCode, ex.StatusCode);
+
+            _handlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                );
         }
     }
 }
