@@ -199,6 +199,47 @@
 //          옮길 때도 모든 인자/생성자 옵션을 보존했는지 점검. 빠뜨린 한 인자가
 //          미래의 함정이 됨. 학습 일지에 적어둔 [Q9] 같은 기존 함정들이
 //          리팩토링 시 다시 떠오르도록 자기 점검 체크리스트로 활용.
+//
+// [Q17] SendAsync<TRequest, TResponse> 테스트에서 TRequest/TResponse 는 Mock 인가요?
+//   - 원인: 제네릭 타입 이름이 Moq 의 타입 인자처럼 보여서 "가짜 객체를 만들어야
+//           하나?" 라는 혼동이 생김.
+//   - 해결: TRequest/TResponse 는 행동을 검증할 의존성이 아니라 JSON 으로
+//           직렬화/역직렬화될 데이터 모양. Mock 대상이 아님.
+//           테스트 파일 안에 private sealed class TestRequest/TestResponse 를
+//           두고, public get/set 프로퍼티로 System.Text.Json 기본 동작을 관찰.
+//   - 기준: 여러 테스트 파일에서 공유할 공용 fixture 가 될 때만 별도 .cs 파일로
+//           분리. 지금처럼 HttpTransferClientTests 안에서만 쓰면 nested class 가
+//           가장 좁고 명확한 범위.
+//
+// [Q18] GET 차단 테스트에는 왜 Handler Setup 을 하지 않나요?
+//   - 원인: "항상 Setup 후 Act" 습관대로 작성하면 GET 이 막혀야 하는 테스트에도
+//           SendAsync 응답을 준비하게 됨. 그러면 테스트 의도가 흐려짐.
+//   - 해결: GET 은 HttpMessageHandler.SendAsync 까지 도달하면 안 되는 명제.
+//           Strict mock 에 Setup 을 두지 않고, Verify(... Times.Never()) 로
+//           HTTP 파이프라인에 진입하지 않았음을 검증.
+//   - 원칙: 예외가 의존성 호출 전 guard clause 에서 발생해야 한다면
+//           "호출되지 않음" 자체가 중요한 단언이다.
+//
+// [Q19] Verify 안에서 request.Content.ReadAsStringAsync() 를 읽었더니
+//       ObjectDisposedException 이 납니다. 왜?
+//   - 원인: 프로덕션 코드가 using var requestMessage 로 요청 메시지를 만들면
+//           SendAsync 메서드 종료 시 HttpRequestMessage 와 내부 StringContent 가
+//           Dispose 됨. Verify 는 Act 이후 실행되므로 이미 해제된 Content 를
+//           읽게 된다.
+//   - 해결: .Callback<HttpRequestMessage, CancellationToken>(...) 에서
+//           handler 호출 순간의 Content 를 문자열로 캡처한다. 그 시점에는 아직
+//           requestMessage 가 살아 있고, 이후 Assert 는 캡처된 string 만 비교.
+//   - 주의: ReadAsStringAsync().GetAwaiter().GetResult() 는 테스트 콜백 안에서
+//           캡처 용도로만 사용. 프로덕션 async 흐름에서는 await 를 우선한다.
+//
+// [Q20] JSON 문자열 비교에서 공백 때문에 실패합니다. 공백을 제거하면 되나요?
+//   - 원인: JSON 은 문자열 표현이 아니라 구조화된 데이터. 공백/들여쓰기 차이는
+//           의미가 없고, 단순 문자열 비교는 표현 차이에 취약함.
+//   - 해결: 응답 역직렬화 테스트는 SendAsync 가 반환한 DTO 의 프로퍼티를 비교.
+//           요청 직렬화 테스트처럼 JSON 문자열 자체를 검증해야 할 때는 필요 시
+//           JsonDocument/JsonElement.DeepEquals 로 구조 비교를 검토.
+//   - 원칙: 테스트 명제가 "DTO 로 역직렬화된다" 이면 문자열이 아니라 객체 상태를
+//           단언한다.
 // ============================================================================
 
 using Feature.Transfer;

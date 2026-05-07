@@ -25,8 +25,8 @@
 | SFTP    | (SSH 기반)| SSH.NET (Renci.SshNet) | user/pass 또는 키 페어 |
 
 **현재 진척**:
-- `Feature.Transfer/HttpTransferClient` — `GetStreamAsync` / `GetStringAsync` 구현 완료. `SendAsync<TRequest, TResponse>` 1차 구현 완료(테스트 미작성).
-- 학습 일지 [Q1]~[Q16] 누적 (`Tests/Test.Transfer/TestHttpTransferClient.cs` 상단).
+- `Feature.Transfer/HttpTransferClient` — `GetStreamAsync` / `GetStringAsync` 구현 완료. `SendAsync<TRequest, TResponse>` 1차 구현 및 핵심 테스트 완료.
+- 학습 일지 [Q1]~[Q20] 누적 (`tests/Feature.Transfer.Tests/HttpTransferClientTests.cs` 상단).
 - FTP / SFTP — 미착수.
 
 ---
@@ -279,8 +279,21 @@ BCL 헬퍼:
 - `SendAsync` 에서 `GET` 은 지원하지 않음. 단순 GET 은 `GetStringAsync` 또는 `GetStreamAsync` 로 분리.
 - 예외 정책은 아직 자체 wrapping 하지 않음. `Serialize`, `SendAsync`, `EnsureSuccessStatusCode`, `Deserialize` 각 단계의 원래 예외를 먼저 관찰하고, 필요 시 이후 `TransferException` 같은 자체 예외 정책을 결정.
 
+**테스트 작성 결과 (2026-05-07)**:
+- `SendAsync_WhenRequestGet_ThrowsNotSupportedException` — `GET` 은 JSON body API 호출 책임에서 제외. `HttpMessageHandler.SendAsync` 가 호출되지 않음을 `Times.Never()` 로 검증.
+- `SendAsync_WhenRequest_RequestContentJsonSerialized` — 테스트 전용 `TestRequest` DTO 가 JSON request body 로 직렬화되는지 검증. `requestMessage` 가 메서드 종료 후 dispose 되므로, `Verify` 시점이 아니라 `Callback` 시점에 body 문자열을 캡처.
+- `SendAsync_WhenResponseContentIsJson_ReturnsDeserializedResponse` — 응답 JSON 을 문자열 그대로 비교하지 않고, `TResponse` DTO 로 역직렬화된 결과 프로퍼티를 검증.
+- `SendAsync_WhenResponseIsNotSuccess_ThrowsHttpRequestException` — `EnsureSuccessStatusCode()` 정책을 고정. 404/500/401 에서 `HttpRequestException` 이 발생하고 `StatusCode` 가 보존되는지 Theory 로 검증.
+
+**추가 학습 일지**:
+- [Q17] `TRequest` / `TResponse` 는 Mock 대상이 아니라 JSON shape 를 나타내는 테스트 DTO.
+- [Q18] guard clause 테스트에서는 의존성 Setup 보다 `Times.Never()` 가 더 정확한 단언.
+- [Q19] `HttpRequestMessage` / `StringContent` 는 dispose 될 수 있으므로 요청 body 검증은 `Callback` 에서 즉시 캡처.
+- [Q20] JSON 은 문자열 표현보다 구조/DTO 상태를 기준으로 비교.
+
 **다음 단계**:
-- xUnit 테스트는 다음 학습 단계에서 작성. 우선순위: GET 차단, JSON request body 검증, JSON response 역직렬화, 비-2xx 응답 예외.
+- A-1 핵심 테스트는 완료. 선택 보강 후보는 Content-Type 검증, POST/PUT/DELETE method 전달 Theory, CancellationToken 전달 검증.
+- 기본 흐름은 A-2 `IHttpClientFactory` 마이그레이션으로 이동.
 
 #### A-2. `IHttpClientFactory` 마이그레이션 (우선순위 #3 — A-1 완료 직후)
 
@@ -608,7 +621,7 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 | # | 작업 | 우선순위 | 난이도 | 비고 |
 |---|-----|---------|-------|------|
 | 1 | ✅ DapperTest 단위 테스트 (이전 plan 잔여) | 높음 | 낮음 | **완료** (2026-04-30, 커밋 `665ee74`/`8517e8c`) — Mock 패턴 일반화 검증, [Q1]~[Q6] 누적 |
-| 2 | HttpTransferClient.SendAsync 구현 + 테스트 (**A-1. `SendAsync<TRequest, TResponse>`** 단계) | 높음 | 중간 | 직렬화/요청 본문 검증 학습 — *기본 HttpClient* |
+| 2 | ✅ HttpTransferClient.SendAsync 구현 + 테스트 (**A-1. `SendAsync<TRequest, TResponse>`** 단계) | 높음 | 중간 | **완료** (2026-05-07, 커밋 `de9caba`) — 직렬화/역직렬화/비-2xx/GET 차단 검증, [Q17]~[Q20] 누적 |
 | 3 | **`IHttpClientFactory` 마이그레이션 (A-2 단계)** | 높음 | 중간 | HTTP 학습 트랙의 후반부 — 표준 패턴 체화 |
 | 4 | FtpTransferClient 구현 + Testcontainers 통합 테스트 | 중간 | 높음 | 새 학습 영역 — 통합 테스트 패턴 도입 |
 | 5 | SftpTransferClient 구현 + Testcontainers 통합 테스트 | 중간 | 높음 | FTP 패턴 재사용 + SSH 특수성 |
@@ -692,6 +705,7 @@ public class TestFtpTransferClient : IClassFixture<FtpServerFixture> { ... }
 - 2026-04-29 — `Feature.Dapper.Tests` 프로젝트 신설, `DapperClient` → `IDapperAdapter` 위임 구조로 전환 (선택지 B). 학습 일지 [Q1]~[Q6] 누적: static 확장 메서드 Mock 불가([Q1]/[Q2]), thin wrapper 테스트 가치 0 ([Q3]), 인터페이스 계층 구조 ([Q4]), Setup vs SetupGet ([Q5]), .CallBase() 적용 케이스 ([Q6]). (커밋 `665ee74`)
 - 2026-04-30 — `DapperClient.SelectTop10` 화이트리스트 검증 추가 (SEC-001 처리). 테스트 2종(허용/거부) 통과, 거부 케이스에서 `Verify(... Times.Never)` 로 단락 검증. (커밋 `8517e8c`)
 - 2026-05-06 — `HttpTransferClient.SendAsync<TRequest, TResponse>` 책임 범위 학습 및 1차 구현. `TRequest` 는 JSON request body DTO, `TResponse` 는 JSON response DTO 로 정리. raw GET(`GetStringAsync`/`GetStreamAsync`) 과 JSON API 호출(`SendAsync`) 책임 분리, `GET` 은 `SendAsync` 에서 비지원 처리. 테스트 작성은 다음 단계로 보류.
+- 2026-05-07 — `HttpTransferClient.SendAsync<TRequest, TResponse>` 핵심 테스트 작성 완료. GET 차단(`Times.Never`), request JSON 직렬화(`Callback` 캡처), response JSON 역직렬화(DTO 프로퍼티 비교), 비-2xx `HttpRequestException.StatusCode` 검증을 추가. 학습 일지 [Q17]~[Q20] 누적. (커밋 `de9caba`)
 
 ---
 
