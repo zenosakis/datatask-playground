@@ -60,8 +60,20 @@ builder.Services.AddScoped<DapperClient>();
 builder.Services.Configure<HttpTransferOptions>(
     builder.Configuration.GetSection("HTTPTransfer")
 );
-builder.Services.AddScoped<HttpClient>();
-builder.Services.AddScoped<HttpTransferClient>();
+// 이전 방식: HttpClient 와 HttpTransferClient 를 각각 DI 에 등록했다.
+// 이 방식은 HttpClient 의 handler pooling / lifetime 관리 책임이 드러나지 않는다.
+// builder.Services.AddScoped<HttpClient>();
+// builder.Services.AddScoped<HttpTransferClient>();
+
+builder.Services.AddHttpClient<HttpTransferClient>((sp, client) => // AddHttpClient 는 Microsoft.Extensions.Http 패키지 필요
+{
+    // Typed client 는 HttpClient 생성과 설정을 DI 등록부에서 처리한다.
+    // HttpTransferClient 생성자는 이미 설정된 HttpClient 를 받기만 한다.
+    var options = sp.GetRequiredService<IOptions<HttpTransferOptions>>().Value;
+
+    client.BaseAddress = new Uri(options.BaseAddress);
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
 
 // 여기서부터 실제 동작할 코드들. builder.Build() 이후에는 등록이 안 됨. 위에 정의된 레시피에 따라 동작함
 using var host = builder.Build();

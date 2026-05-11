@@ -358,6 +358,27 @@ services.AddHttpClient<HttpTransferClient>(c => c.BaseAddress = new Uri("..."));
 
 **완료 기준**: 결정 + 적용. 동일 동작 유지.
 
+##### 2026-05-11 학습 정리 — `HttpClient` 구성 책임을 composition root 로 이동
+
+`IHttpClientFactory` 학습을 시작하면서 `HttpTransferClient` 의 생성자 책임을 정리했다.
+
+**변경된 책임 분리**:
+- `HttpTransferClient` — 이미 설정된 `HttpClient` 를 사용해 `GetStreamAsync`, `GetStringAsync`, `SendAsync<TRequest, TResponse>` 를 수행한다.
+- `Sandbox.HostBuilder` — `AddHttpClient<HttpTransferClient>((sp, client) => ...)` 등록 람다에서 `HttpTransferOptions` 를 읽고 `BaseAddress` / `Timeout` 을 설정한다.
+- `Sandbox.PureDi` — 같은 조립을 코드로 직접 수행한다. `HttpTransferOptions` 생성 → `HttpClient` 구성 → `new HttpTransferClient(httpClient)` 순서.
+- 테스트 — `CreateSut(...)` 에서 `HttpClient` 를 설정한 뒤 SUT 에 주입한다. 운영은 factory 를 쓰지만 단위 테스트는 기존 `HttpMessageHandler` mock 패턴을 유지한다.
+
+**학습 포인트**:
+- `AddHttpClient` 는 `Microsoft.Extensions.Http` 패키지가 필요하다.
+- `Configure<HttpTransferOptions>` 는 `IOptions<HttpTransferOptions>` 를 등록한다. typed client 람다에서는 `sp.GetRequiredService<IOptions<HttpTransferOptions>>()` 로 옵션을 꺼낼 수 있다.
+- `HttpClient` 설정 책임을 생성자와 등록부 양쪽에 두면 중복이다. `IHttpClientFactory` 패턴에서는 등록부가 설정 책임을 갖고, client 클래스는 사용 책임만 갖는 편이 읽기 쉽다.
+- Pure DI 와 HostBuilder DI 의 차이는 "누가 조립을 대신하느냐" 이다. Pure DI 는 `Program.cs` 가 직접 조립하고, HostBuilder 는 `ServiceCollection` 등록 규칙에 따라 컨테이너가 조립한다.
+
+**추가 학습 일지**:
+- [Q21] `AddHttpClient` 가 보이지 않으면 `Microsoft.Extensions.Http` 패키지 참조를 확인한다.
+- [Q22] Typed client 생성자에는 보통 `HttpClient` 만 받고, `BaseAddress` / `Timeout` 설정은 등록 람다에서 처리한다.
+- [Q23] Pure DI 에서는 factory 가 없으므로 설정 완료된 `HttpClient` 를 직접 만들어 주입한다.
+
 ##### Step F-5: 테스트 마이그레이션 — [Q1]~[Q16] 자산 보존
 
 핵심 질문: `IHttpClientFactory` 를 도입하면 기존 `HttpMessageHandler` Mock 패턴이 깨지는가? **답: 깨지지 않음.** 두 가지 경로:

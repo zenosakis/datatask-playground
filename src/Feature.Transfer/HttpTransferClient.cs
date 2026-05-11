@@ -4,24 +4,17 @@ using Feature.Transfer.Interfaces;
 
 namespace Feature.Transfer
 {
-    public class HttpTransferClient : IDataTransferClient
+    // HttpClient 의 BaseAddress/Timeout 같은 구성은 composition root 에서 끝낸 뒤 주입한다.
+    // 이 클래스는 설정을 해석하지 않고, 이미 설정된 HttpClient 로 요청을 수행하는 책임만 가진다.
+    public class HttpTransferClient(HttpClient httpClient) : IDataTransferClient
     {
-        private readonly HttpClient _httpClient;
-
-        public HttpTransferClient(HttpClient httpClient, HttpTransferOptions options)
-        {
-            _httpClient = httpClient;
-            _httpClient.BaseAddress = new Uri(options.BaseAddress);
-            _httpClient.Timeout = new TimeSpan(0, 0, options.TimeoutSeconds);
-        }
-
         /// <summary>
         /// 단순 GET 요청을 보내고 응답 본문을 raw stream으로 반환한다.
         /// 파일 다운로드나 큰 payload처럼 클라이언트가 응답 내용을 해석하지 않아야 하는 경우에 사용한다.
         /// </summary>
         public Task<Stream> GetStreamAsync(string resource, CancellationToken ct = default)
         {
-            return _httpClient.GetStreamAsync(resource, ct);
+            return httpClient.GetStreamAsync(resource, ct);
         }
 
         /// <summary>
@@ -30,7 +23,7 @@ namespace Feature.Transfer
         /// </summary>
         public Task<string> GetStringAsync(string resource, CancellationToken ct = default)
         {
-            return _httpClient.GetStringAsync(resource, ct);
+            return httpClient.GetStringAsync(resource, ct);
         }
 
         /// <summary>
@@ -52,7 +45,7 @@ namespace Feature.Transfer
                 "application/json"
             );
 
-            using var response = await _httpClient.SendAsync(requestMessage, ct);
+            using var response = await httpClient.SendAsync(requestMessage, ct);
             response.EnsureSuccessStatusCode();
             var responseJson = await response.Content.ReadAsStringAsync(ct);
             var result = JsonSerializer.Deserialize<TResponse>(responseJson);

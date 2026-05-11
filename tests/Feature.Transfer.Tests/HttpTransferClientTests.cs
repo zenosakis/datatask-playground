@@ -279,12 +279,12 @@ namespace Feature.Transfer.Tests
             string baseAddress = "http://localhost",
             int timeoutSeconds = 60)
         {
-            var options = new HttpTransferOptions()
-            {
-                BaseAddress = baseAddress,
-                TimeoutSeconds = timeoutSeconds,
-            };
-            return new HttpTransferClient(_client, options);
+            // HttpTransferClient 생성자가 options 를 받지 않으므로,
+            // 테스트도 production composition root 처럼 설정 완료된 HttpClient 를 주입한다.
+            _client.BaseAddress = new Uri(baseAddress);
+            _client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+            return new HttpTransferClient(_client);
         }
 
         public void Dispose() => _client.Dispose();

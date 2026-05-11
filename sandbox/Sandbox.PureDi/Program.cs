@@ -7,6 +7,7 @@ using Feature.Settings;
 using Feature.Dapper;
 using Feature.Encryption;
 using Feature.Encryption.Interfaces;
+using Feature.Transfer;
 using Microsoft.Data.SqlClient;
 
 //////////////////////////////////////////
@@ -56,6 +57,23 @@ foreach (var row in rows)
     Log.Information("   DIALEDKEY: {Key}", row.DIALEDKEY);
 }
 
+var options = new HttpTransferOptions
+{
+    BaseAddress = "http://localhost",
+    TimeoutSeconds = 60
+};
+
+// Pure DI 에서는 컨테이너가 대신 해주는 조립을 Program.cs 에서 직접 한다.
+// 즉 options 를 읽고, HttpClient 를 구성하고, 완성된 HttpClient 를 클라이언트에 넘긴다.
+var httpClient = new HttpClient()
+{
+    BaseAddress = new Uri(options.BaseAddress),
+    Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds)
+};
+var httpTransferClient = new HttpTransferClient(httpClient);
+
+// 실제 HTTP 호출은 로컬 테스트 서버가 있을 때만 켠다.
+// await httpTransferClient.GetStringAsync("/");
 
 Log.Information("=== 콘솔 프로그램 종료 ===");
 
