@@ -69,6 +69,7 @@ builder.Services.AddHttpClient<HttpTransferClient>((sp, client) => // AddHttpCli
 {
     // Typed client 는 HttpClient 생성과 설정을 DI 등록부에서 처리한다.
     // HttpTransferClient 생성자는 이미 설정된 HttpClient 를 받기만 한다.
+    // Singleton 서비스가 typed client 를 오래 보관하지 않도록 소비자 수명도 함께 점검해야 한다.
     var options = sp.GetRequiredService<IOptions<HttpTransferOptions>>().Value;
 
     client.BaseAddress = new Uri(options.BaseAddress);

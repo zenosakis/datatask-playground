@@ -373,11 +373,16 @@ services.AddHttpClient<HttpTransferClient>(c => c.BaseAddress = new Uri("..."));
 - `Configure<HttpTransferOptions>` 는 `IOptions<HttpTransferOptions>` 를 등록한다. typed client 람다에서는 `sp.GetRequiredService<IOptions<HttpTransferOptions>>()` 로 옵션을 꺼낼 수 있다.
 - `HttpClient` 설정 책임을 생성자와 등록부 양쪽에 두면 중복이다. `IHttpClientFactory` 패턴에서는 등록부가 설정 책임을 갖고, client 클래스는 사용 책임만 갖는 편이 읽기 쉽다.
 - Pure DI 와 HostBuilder DI 의 차이는 "누가 조립을 대신하느냐" 이다. Pure DI 는 `Program.cs` 가 직접 조립하고, HostBuilder 는 `ServiceCollection` 등록 규칙에 따라 컨테이너가 조립한다.
+- Typed client 는 짧게 만들어 쓰는 client wrapper 로 보는 편이 안전하다. Singleton 서비스가 typed client 를 생성자 주입받아 필드로 오래 보관하면, transient 로 등록된 typed client 와 내부 `HttpClient` 가 사실상 singleton 처럼 붙잡히는 captive dependency 가 된다.
+- Singleton 에서 HTTP 전송이 필요하면 두 가지 중 하나를 선택한다.
+  1. 전송 작업 클래스를 singleton 이 아닌 transient/scoped 로 등록하고 `HttpTransferClient` 를 생성자 주입받는다.
+  2. singleton 을 유지해야 한다면 `IServiceScopeFactory` 를 주입받고, 실제 전송 시점에 scope 를 만들어 `HttpTransferClient` 를 resolve 한다.
 
 **추가 학습 일지**:
 - [Q21] `AddHttpClient` 가 보이지 않으면 `Microsoft.Extensions.Http` 패키지 참조를 확인한다.
 - [Q22] Typed client 생성자에는 보통 `HttpClient` 만 받고, `BaseAddress` / `Timeout` 설정은 등록 람다에서 처리한다.
 - [Q23] Pure DI 에서는 factory 가 없으므로 설정 완료된 `HttpClient` 를 직접 만들어 주입한다.
+- [Q24] Singleton 이 typed client 를 필드로 오래 보관하면 수명 관리 모델이 흐려진다. typed client 를 쓰려면 소비자 수명을 짧게 맞추거나 scope 를 만들어 resolve 한다.
 
 ##### Step F-5: 테스트 마이그레이션 — [Q1]~[Q16] 자산 보존
 

@@ -6,6 +6,7 @@ namespace Feature.Transfer
 {
     // HttpClient 의 BaseAddress/Timeout 같은 구성은 composition root 에서 끝낸 뒤 주입한다.
     // 이 클래스는 설정을 해석하지 않고, 이미 설정된 HttpClient 로 요청을 수행하는 책임만 가진다.
+    // Typed client 로 등록할 경우 singleton 소비자가 이 인스턴스를 오래 보관하지 않도록 주의한다.
     public class HttpTransferClient(HttpClient httpClient) : IDataTransferClient
     {
         /// <summary>
