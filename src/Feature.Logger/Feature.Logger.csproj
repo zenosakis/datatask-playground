@@ -4,6 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+      <PackageId>Kyn.Feature.Logger</PackageId>
+      <Version>1.0.2</Version>
+      <Authors>Kim Yong Nyeon</Authors>
+      <Description>공통 Serilog 설정 라이브러리</Description>
   </PropertyGroup>
 
   <ItemGroup>
